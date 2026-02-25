@@ -7,14 +7,38 @@ import { stdin as input, stdout as output } from "node:process";
 env.cacheDir = "./.cache";
 env.backends.onnx.runtime = ort;
 
+/**
+ * Custom streamer to track performance metrics
+ */
+class MetricsStreamer extends TextStreamer {
+  constructor(tokenizer, options) {
+    super(tokenizer, options);
+    this.startTime = 0;
+    this.ttft = 0; // Time To First Token
+    this.tokenCount = 0;
+    this.hasFirstToken = false;
+  }
+
+  // Override to detect first token
+  on_finalized_text(text) {
+    if (!this.hasFirstToken && text.length > 0) {
+      this.ttft = performance.now() - this.startTime;
+      this.hasFirstToken = true;
+    }
+    super.on_finalized_text(text);
+    this.tokenCount++;
+  }
+}
+
 async function startChat() {
   const modelId = "onnx-community/LFM2-1.2B-ONNX";
   const rl = readline.createInterface({ input, output });
   
-  console.log(`Loading model: ${modelId}...`);
+  console.log(`\nLoading model: ${modelId}...`);
   const loadStartTime = performance.now();
 
   let generator;
+  let loadDuration;
   try {
     generator = await pipeline(
       "text-generation",
@@ -24,7 +48,7 @@ async function startChat() {
         token: process.env.HUGGINGFACE_TOKEN,
       }
     );
-    const loadDuration = ((performance.now() - loadStartTime) / 1000).toFixed(2);
+    loadDuration = ((performance.now() - loadStartTime) / 1000).toFixed(2);
     console.log(`Model loaded in ${loadDuration}s\n`);
   } catch (error) {
     console.error(`Failed to load model: ${error.message}`);
@@ -42,19 +66,23 @@ async function startChat() {
       break;
     }
 
-    // Add user message to history
     messages.push({ role: "user", content: userInput.trim() });
 
     // Format prompt using ChatML
     const prompt = messages.map(m => `<|im_start|>${m.role}\n${m.content}<|im_end|>`).join('\n') + '\n<|im_start|>assistant\n';
 
-    const streamer = new TextStreamer(generator.tokenizer, {
+    // Calculate prompt tokens correctly
+    const { input_ids } = await generator.tokenizer(prompt);
+    const promptTokens = input_ids.size;
+
+    const streamer = new MetricsStreamer(generator.tokenizer, {
       skip_prompt: true,
       skip_special_tokens: true,
     });
 
     process.stdout.write("\nAssistant: ");
     const inferenceStartTime = performance.now();
+    streamer.startTime = inferenceStartTime;
 
     try {
       const results = await generator(prompt, {
@@ -64,13 +92,32 @@ async function startChat() {
         streamer: streamer,
       });
 
+      const inferenceEndTime = performance.now();
+      const totalDuration = (inferenceEndTime - inferenceStartTime) / 1000;
       const assistantResponse = results[0].generated_text;
-      const inferenceDuration = ((performance.now() - inferenceStartTime) / 1000).toFixed(2);
       
-      // Add assistant response to history
       messages.push({ role: "assistant", content: assistantResponse });
       
-      console.log(`\n\n[Inference: ${inferenceDuration}s]\n`);
+      // Calculate Metrics
+      const ttftSec = streamer.ttft / 1000;
+      const decodeDuration = totalDuration - ttftSec;
+      const promptTps = (promptTokens / ttftSec).toFixed(2);
+      const decodingTps = (streamer.tokenCount / decodeDuration).toFixed(2);
+
+      // Get technical settings
+      const device = generator.device || 'cpu';
+      const dtype = generator.model.config.torch_dtype || 'q4';
+
+      console.log(`\n\n--- Performance Metrics ---`);
+      console.log(`Model Load Time:  ${loadDuration}s`);
+      console.log(`Device:           ${device.toUpperCase()}`);
+      console.log(`Precision:        ${dtype}`);
+      console.log(`Prompt Tokens:    ${promptTokens} (${promptTps} tok/s)`);
+      console.log(`Generated:        ${streamer.tokenCount} tokens (${decodingTps} tok/s)`);
+      console.log(`TTFT:             ${ttftSec.toFixed(3)}s (Prompt processing)`);
+      console.log(`Total Time:       ${totalDuration.toFixed(2)}s`);
+      console.log(`---------------------------\n`);
+
     } catch (error) {
       console.error(`\nError during generation: ${error.message}\n`);
     }
