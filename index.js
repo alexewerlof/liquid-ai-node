@@ -1,11 +1,8 @@
-import { pipeline, env } from "@huggingface/transformers";
+import { pipeline, env, TextStreamer } from "@huggingface/transformers";
 import * as ort from "onnxruntime-node";
 
 // Core Mandates from AGENTS.md
-// 1. Explicitly configure caching for reliability
 env.cacheDir = "./.cache";
-
-// 2. Idiomatic way to override the ONNX Runtime backend in Transformers.js v3
 env.backends.onnx.runtime = ort;
 
 async function runLiquidModel(messages) {
@@ -19,7 +16,7 @@ async function runLiquidModel(messages) {
       "text-generation",
       modelId,
       {
-        dtype: "q4", // Prioritize q4 for performance as per research
+        dtype: "q4",
         token: process.env.HUGGINGFACE_TOKEN,
       }
     );
@@ -27,28 +24,31 @@ async function runLiquidModel(messages) {
     const loadDuration = ((performance.now() - loadStartTime) / 1000).toFixed(2);
     console.log(`Model loaded in ${loadDuration}s`);
 
-    // Using ChatML format for LFM models
+    // Using ChatML format
     const prompt = messages.map(m => `<|im_start|>${m.role}\n${m.content}<|im_end|>`).join('\n') + '\n<|im_start|>assistant\n';
 
-    console.log("Starting inference...");
+    // Initialize the streamer to print tokens as they are generated
+    const streamer = new TextStreamer(generator.tokenizer, {
+      skip_prompt: true,
+      skip_special_tokens: true,
+    });
+
+    console.log("Starting inference (streaming mode):\n");
     const inferenceStartTime = performance.now();
 
     const results = await generator(prompt, {
       max_new_tokens: 128,
       temperature: 0.7,
       return_full_text: false,
+      streamer: streamer, // Pass the streamer to the generator
     });
 
     const inferenceDuration = ((performance.now() - inferenceStartTime) / 1000).toFixed(2);
-    console.log(`Inference completed in ${inferenceDuration}s`);
+    console.log(`\n\nInference completed in ${inferenceDuration}s`);
 
     return results[0].generated_text;
   } catch (error) {
     console.error(`Error during model execution: ${error.message}`);
-    console.error("Possible fixes:");
-    console.error("1. Ensure HUGGINGFACE_TOKEN in .env is valid.");
-    console.error("2. Ensure you have accepted the model license on Hugging Face.");
-    console.error("3. Check if you have enough disk space and RAM.");
     throw error;
   }
 }
@@ -57,12 +57,4 @@ const messages = [
   { role: "user", content: "Explain Site Reliability Engineering in one sentence:" }
 ];
 
-runLiquidModel(messages)
-  .then((response) => {
-    console.log("\nResponse:");
-    console.log(response);
-  })
-  .catch((err) => {
-    // Error is already logged in runLiquidModel
-    process.exit(1);
-  });
+runLiquidModel(messages).catch(() => process.exit(1));
