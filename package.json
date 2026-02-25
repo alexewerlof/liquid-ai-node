@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/package",
+  "name": "liquid-ai-node",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^3.8.1",
+    "onnxruntime-node": "1.24.2"
+  },
+  "overrides": {
+    "onnxruntime-node": "$onnxruntime-node"
+  }
+}
