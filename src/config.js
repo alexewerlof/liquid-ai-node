@@ -2,12 +2,12 @@
  * Global application configuration.
  * Supports environment variable overrides for key settings.
  */
-export const CONFIG = {
+export const CONFIG = Object.freeze({
   // Model ID on Hugging Face
-  modelId: process.env.MODEL_ID || "onnx-community/LFM2-1.2B-ONNX",
+  modelId: "onnx-community/LFM2-1.2B-ONNX",
 
   // Default system prompt
-  systemPrompt: process.env.SYSTEM_PROMPT || [
+  systemPrompt: [
     "You are an expert in SRE (Site Reliability Engineering) and DevOps practices",
     "with deep knowledge of terminology and tooling.",
     "When the user asks a question, some relevant context may be added to the context (RAG).",
@@ -15,19 +15,19 @@ export const CONFIG = {
   ].join(" "),
 
   // Model precision/quantization
-  dtype: process.env.DTYPE || "q4",
+  dtype: "q4",
 
   // Inference parameters
   inference: {
-    max_new_tokens: parseInt(process.env.MAX_NEW_TOKENS) || 512,
-    temperature: parseFloat(process.env.TEMPERATURE) || 0.7,
+    max_new_tokens: 512,
+    temperature: 0.7,
     return_full_text: false,
   },
 
   // Environment settings
-  cacheDir: process.env.CACHE_DIR || "./.cache",
+  cacheDir: "./.cache",
 
   // RAG Configuration
-  embeddingModelId: process.env.EMBEDDING_MODEL_ID || "onnx-community/all-MiniLM-L6-v2-ONNX",
-  contentPath: process.env.CONTENT_PATH || "./content",
-};
+  embeddingModelId: "onnx-community/all-MiniLM-L6-v2-ONNX",
+  contentPath: "./content",
+});

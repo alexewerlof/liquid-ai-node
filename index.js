@@ -13,9 +13,10 @@ import { CONFIG } from "./src/config.js";
  */
 async function main() {
   const { modelId, systemPrompt, dtype } = CONFIG;
+  const huggingFaceToken = process.env.HUGGINGFACE_TOKEN;
 
   try {
-    const generator = await initModel(modelId, dtype);
+    const generator = await initModel(modelId, dtype, huggingFaceToken);
     await startChat(generator, systemPrompt);
   } catch (error) {
     console.error(`\nCRITICAL ERROR: ${error.message}`);

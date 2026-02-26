@@ -11,8 +11,9 @@ env.backends.onnx.runtime = ort;
  * Initializes the model and returns the generator.
  * @param {string} modelId - Hugging Face model ID.
  * @param {string} dtype - Precision/quantization for the model.
+ * @param {string|null} token - Hugging Face token.
  */
-export async function initModel(modelId = CONFIG.modelId, dtype = CONFIG.dtype) {
+export async function initModel(modelId = CONFIG.modelId, dtype = CONFIG.dtype, token = null) {
   console.log(`\nLoading model: ${modelId}...`);
   const loadStartTime = performance.now();
 
@@ -22,7 +23,7 @@ export async function initModel(modelId = CONFIG.modelId, dtype = CONFIG.dtype) 
       modelId,
       {
         dtype: dtype,
-        token: process.env.HUGGINGFACE_TOKEN,
+        token: token,
       }
     );
     const loadDuration = ((performance.now() - loadStartTime) / 1000).toFixed(2);
@@ -80,7 +81,7 @@ export async function getCompletion(generator, messages, options = {}) {
 
     const totalDuration = (performance.now() - inferenceStartTime) / 1000;
     const assistantResponse = results[0].generated_text;
-    
+
     // Performance Metrics
     const device = generator.device || 'cpu';
     const dtype = generator.model.config.torch_dtype || CONFIG.dtype;
