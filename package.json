@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
+    "jty": "^4.0.0",
     "onnxruntime-node": "1.24.2"
   },
   "overrides": {

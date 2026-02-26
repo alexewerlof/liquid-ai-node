@@ -2,6 +2,7 @@ import { pipeline, env } from "@huggingface/transformers";
 import * as ort from "onnxruntime-node";
 import { MetricsStreamer } from "./metrics.js";
 import { CONFIG } from "./config.js";
+import { isStr } from "jty";
 
 // Apply global configurations
 env.cacheDir = CONFIG.cacheDir;
@@ -13,7 +14,10 @@ env.backends.onnx.runtime = ort;
  * @param {string} dtype - Precision/quantization for the model.
  * @param {string|null} token - Hugging Face token.
  */
-export async function initModel(modelId = CONFIG.modelId, dtype = CONFIG.dtype, token = null) {
+export async function initModel(modelId, dtype = CONFIG.dtype, token = null) {
+  if (!isStr(modelId)) {
+    throw new TypeError(`Expected a string for modelId. Got ${modelId} (${typeof modelId})`)
+  }
   console.log(`\nLoading model: ${modelId}...`);
   const loadStartTime = performance.now();
 
