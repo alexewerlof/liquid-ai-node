@@ -12,11 +12,13 @@ import { inference, systemPrompt } from "./src/config.js";
  * Main application entry point.
  */
 async function main() {
-  const huggingFaceToken = process.env.HUGGINGFACE_TOKEN;
-
   try {
-    const generator = await initModel(inference.modelId, inference.dtype, huggingFaceToken);
-    await startChat(generator, systemPrompt);
+    const huggingFaceToken = process.env.HUGGINGFACE_TOKEN;
+    console.log('Loading model...')
+    console.time(`Init model ${inference.modelId}`)
+    const generator = await initModel(inference.modelId, { ...inference.options, token: huggingFaceToken });
+    console.timeEnd(`Init model ${inference.modelId}`)
+    await startChat(generator, systemPrompt, inference.generation);
   } catch (error) {
     console.error(`\nCRITICAL ERROR: ${error.message}`);
     process.exit(1);

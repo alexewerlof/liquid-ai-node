@@ -1,77 +1,95 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { initEmbeddingModel, generateEmbedding } from "./embeddings.js";
-import { VectorStore } from "./vector_store.js";
+import { VectorStore } from "./VectorStore.js";
 import { embedding } from "./config.js";
 
 const vectorStore = new VectorStore();
 
 /**
- * Loads markdown files from a directory and its subdirectories and indexes them in the vector store.
- * @param {string} contentDir - Path to the content directory.
+ * Lists all markdown files in a directory (recursively).
+ * @param {string} dir - Root content directory.
+ * @returns {Promise<Array<{fullPath: string, relativePath: string}>>}
  */
-export async function ingestContent(contentDir = embedding.contentPath) {
+export async function listMarkdownFiles(dir) {
+  const entries = await fs.readdir(dir, { recursive: true, withFileTypes: true });
+  return entries
+    .filter(e => e.isFile() && e.name.endsWith(".md"))
+    .map(e => {
+      const fullPath = path.join(e.parentPath || e.path, e.name);
+      return { fullPath, relativePath: path.relative(dir, fullPath) };
+    });
+}
+
+/**
+ * Splits text into chunks by double-newline, keeping only non-empty chunks.
+ * @param {string} text - The raw text content.
+ * @param {number} [minLength=0] - Minimum character length for a chunk.
+ * @returns {string[]} Non-empty chunks.
+ */
+export function chunkText(text, minLength = 0) {
+  return text
+    .split(/\n\n+/)
+    .map((c) => c.trim())
+    .filter((c) => c.length > minLength);
+}
+
+/**
+ * Loads markdown files from a directory, chunks them, and indexes them in the vector store.
+ * @param {import('./Embedder.js').Embedder} embedder - The embedder instance.
+ * @param {string} [contentDir] - Path to the content directory.
+ * @returns {Promise<void>}
+ */
+export async function ingestContent(embedder, contentDir = embedding.contentPath) {
   try {
-    // Get all entries recursively. withFileTypes: true allows checking if an entry is a file.
-    const entries = await fs.readdir(contentDir, { recursive: true, withFileTypes: true });
-    
-    // Filter for markdown files only
-    const markdownFiles = entries.filter(entry => 
-      entry.isFile() && entry.name.endsWith('.md')
-    );
+    console.time(`Ingest content ${contentDir}`)
+    const files = await listMarkdownFiles(contentDir);
+    console.log(`Ingesting ${files.length} files from "${contentDir}" into RAG context...`);
 
-    console.log(`Ingesting ${markdownFiles.length} files from "${contentDir}" (including subdirectories) into RAG context...`);
-
-    for (const entry of markdownFiles) {
-      // entry.parentPath is available in newer Node versions, or we can use path.join(entry.path, entry.name)
-      // For Node 22, entry.parentPath (or entry.path in some versions) is used.
-      const fullPath = path.join(entry.parentPath || entry.path, entry.name);
-      const relativePath = path.relative(contentDir, fullPath);
-      const content = await fs.readFile(fullPath, 'utf-8');
-
-      // Simple chunking strategy for markdown: split by double newline (paragraphs/sections)
-      const chunks = content.split(/\n\n+/).filter(c => c.trim().length > 50);
+    for (const { fullPath, relativePath } of files) {
+      const content = await fs.readFile(fullPath, "utf-8");
+      const chunks = chunkText(content);
       console.log(`Processing file: ${relativePath} - ${chunks.length} chunks`);
 
       for (const chunk of chunks) {
-        const logMsg = `${chunk.slice(0, 15)} (${chunk.length} chars)`;
-        console.time(logMsg);
-        const embedding = await generateEmbedding(chunk);
-        console.timeEnd(logMsg);
+        const embedding = await embedder.embed(chunk);
         vectorStore.addDocument(chunk, embedding, { filename: relativePath });
       }
     }
 
     console.log(`Successfully indexed all knowledge base files from "${contentDir}".`);
+    console.timeEnd(`Ingest content ${contentDir}`)
   } catch (error) {
     console.error(`Error during RAG ingestion: ${error.message}`);
-    if (error.code !== 'ENOENT') throw error;
+    if (error.code !== "ENOENT") throw error;
   }
 }
 
 /**
  * Retrieves the most relevant context for a user query.
+ * @param {import('./Embedder.js').Embedder} embedder - The embedder instance.
  * @param {string} query - The user query.
- * @param {number} [topK=3] - Number of results to return.
- * @returns {Promise<string>} The concatenated context string.
+ * @param {number} [minScore] - Minimum similarity score (0-1) required for a result to be included.
+ * @param {number} [maxResults] - Maximum number of results to return.
+ * @returns {Promise<string>} Concatenated context string, or empty string if no results.
  */
-export async function getRelevantContext(query, topK = 3) {
-  const queryEmbedding = await generateEmbedding(query);
-  const results = vectorStore.search(queryEmbedding, topK);
+export async function getRelevantContext(embedder, query, minScore = 0.3, maxResults = 3) {
+  const queryEmbedding = await embedder.embed(query);
+  const results = vectorStore.search(queryEmbedding, minScore, maxResults);
+
+  console.log(`RAG found ${results.length} items. Similarity: ${results.map(r => r.score).join(", ")}.`);
 
   if (results.length === 0) return "";
-
-  // Concatenate context with clear markers
-  return results.map(r => `[Source: ${r.metadata.filename}]\n${r.text}`).join('\n\n');
+  return results.map(result => `[Source: ${result.metadata.filename}]\n${result.text}`).join("\n\n");
 }
 
 /**
- * Augments a user query with retrieved context.
+ * Augments a user query with retrieved context from the knowledge base.
+ * @param {import('./Embedder.js').Embedder} embedder - The embedder instance.
  * @param {string} query - The user query.
- * @returns {Promise<string>} The augmented prompt.
+ * @returns {Promise<string>} The augmented prompt, or original query if no context found.
  */
-export async function augmentQuery(query) {
-  const context = await getRelevantContext(query);
+export async function augmentQuery(embedder, query) {
+  const context = await getRelevantContext(embedder, query);
   if (!context) return query;
 
   return [

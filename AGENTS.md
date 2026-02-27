@@ -11,13 +11,13 @@ This repo is a feasibility test for running Liquid AI models via `@huggingface/t
 | File | Purpose |
 |---|---|
 | `index.js` | Entry point — initializes model and starts interactive chat |
-| `src/config.js` | Shared configuration: cache dir, model IDs, generation params |
-| `src/model.js` | Model loading via Transformers.js |
-| `src/chat.js` | Interactive chat loop with streaming |
+| `src/config.js` | Model IDs, generation params, and system prompt |
+| `src/runtime.js` | Shared ONNX runtime setup (cacheDir, backend) |
+| `src/model.js` | Model loading + callback-based `streamCompletion` |
+| `src/chat.js` | Interactive chat loop using `for await` token streaming |
 | `src/rag.js` | RAG pipeline: load content, embed, retrieve context |
 | `src/embeddings.js` | Embedding model wrapper |
 | `src/vector_store.js` | In-memory vector store for similarity search |
-| `src/metrics.js` | TTFT / TPS performance metrics |
 
 ---
 
@@ -40,12 +40,36 @@ These conventions apply to **all** JavaScript code generated or modified in this
 - Prefer pure functions with explicit inputs and outputs.
 - A function's behavior must be fully determined by its arguments — no hidden state, no side effects unless the function's purpose is a side effect (e.g., logging, I/O).
 - This makes functions easy to test with **table-driven tests** (an array of `{ input, expected }` pairs).
+- If multiple functions rely on an external variable, they're probably better suited to be method of a class.
+- When creating classes, if there are parts of the internal implementation that can be encapsulated to a function with 1-3 inputs, it can move to a pure function next to the class in the same file.
 
 ### Keep Functions Small
 
 - Each function should do **one thing**.
 - Use `switch...case` with `return` or `throw` inside each case to encapsulate complex decision logic. Do not let cases fall through.
 - The sweet spot for a function body is **2–10 lines**. When a function grows beyond that, look for opportunities to extract helpers.
+
+### Type validation
+
+- **ALWAYS** validate the type of a variable close to where it is used. For functions, the first few lines are the best place.
+- If the type validation fails, emit the right error type: `TypeError` for wrong type, `RangeError` for wrong value, `ReferenceError` for missing value, `SyntaxError` for invalid syntax, `URIError` for invalid URI, `EvalError` for invalid eval and if no other error class fits, emit `Error`.
+- The error message should be clear (what went wrong? what did we expect?) and actionable. A good error message is `Expected <type> for <variable>, but got <value> (${typeof value})`.
+- Use the [`jty`](https://www.npmjs.com/package/jty) library for type validation. The most commonly used functions are:
+  - `isStr()`
+  - `isNum()`
+  - `isArr()` (similar to `Array.isArray()` but prefered)
+  - `isA()` (similar to the `instanceof` operator but prefered)
+- The typical usage of this library looks like:
+```javascript
+import { isStr } from "jty";
+
+function myFunction(arg) {
+  if (!isStr(arg)) {
+    throw new TypeError(`Expected string for arg, but got ${arg} (${typeof arg})`);
+  }
+  // ... rest of the logic that relies on arg being a string
+}
+```
 
 ### Extract Common Logic
 

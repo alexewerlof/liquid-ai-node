@@ -1,10 +1,11 @@
 /**
  * Global application configuration.
- * Supports environment variable overrides for key settings.
+ * Model IDs, generation params, and system prompt.
  */
 
-// Shared settings
-export const cacheDir = "./.cache";
+function fz(obj) {
+  return Object.freeze(Object.assign({}, obj));
+}
 
 // Default system prompt
 export const systemPrompt = [
@@ -15,10 +16,12 @@ export const systemPrompt = [
 ].join(" ");
 
 // Inference model configuration (text-generation)
-export const inference = Object.freeze({
+export const inference = fz({
   modelId: "onnx-community/LFM2-1.2B-ONNX",
-  dtype: "q4",
-  generation: Object.freeze({
+  options: fz({
+    dtype: "q4",
+  }),
+  generation: fz({
     max_new_tokens: 512,
     temperature: 0.7,
     return_full_text: false,
@@ -26,8 +29,10 @@ export const inference = Object.freeze({
 });
 
 // Embedding model configuration (RAG)
-export const embedding = Object.freeze({
+export const embedding = fz({
   modelId: "onnx-community/all-MiniLM-L6-v2-ONNX",
-  dtype: "fp32",
   contentPath: "./content",
+  options: fz({
+    dtype: "fp32",
+  }),
 });
