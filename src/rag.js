@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { initEmbeddingModel, generateEmbedding } from "./embeddings.js";
 import { VectorStore } from "./vector_store.js";
-import { CONFIG } from "./config.js";
+import { embedding } from "./config.js";
 
 const vectorStore = new VectorStore();
 
@@ -10,7 +10,7 @@ const vectorStore = new VectorStore();
  * Loads markdown files from a directory and its subdirectories and indexes them in the vector store.
  * @param {string} contentDir - Path to the content directory.
  */
-export async function ingestContent(contentDir = CONFIG.contentPath) {
+export async function ingestContent(contentDir = embedding.contentPath) {
   try {
     // Get all entries recursively. withFileTypes: true allows checking if an entry is a file.
     const entries = await fs.readdir(contentDir, { recursive: true, withFileTypes: true });

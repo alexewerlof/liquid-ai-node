@@ -1,9 +1,9 @@
 import { pipeline, env } from "@huggingface/transformers";
 import * as ort from "onnxruntime-node";
-import { CONFIG } from "./config.js";
+import { embedding, cacheDir } from "./config.js";
 
 // Apply global configurations
-env.cacheDir = CONFIG.cacheDir;
+env.cacheDir = cacheDir;
 env.backends.onnx.runtime = ort;
 
 let embeddingPipeline = null;
@@ -12,7 +12,7 @@ let embeddingPipeline = null;
  * Initializes the embedding model.
  * @param {string} modelId - Hugging Face model ID for embeddings.
  */
-export async function initEmbeddingModel(modelId = CONFIG.embeddingModelId) {
+export async function initEmbeddingModel(modelId = embedding.modelId) {
   if (embeddingPipeline) return embeddingPipeline;
 
   console.log(`Loading embedding model: ${modelId}...`);
@@ -20,8 +20,7 @@ export async function initEmbeddingModel(modelId = CONFIG.embeddingModelId) {
   
   try {
     embeddingPipeline = await pipeline("feature-extraction", modelId, {
-      // Use standard precision for embeddings unless specified
-      dtype: "fp32", 
+      dtype: embedding.dtype,
     });
     const duration = ((performance.now() - start) / 1000).toFixed(2);
     console.log(`Embedding model loaded in ${duration}s.

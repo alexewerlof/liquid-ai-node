@@ -6,17 +6,16 @@
 
 import { initModel } from "./src/model.js";
 import { startChat } from "./src/chat.js";
-import { CONFIG } from "./src/config.js";
+import { inference, systemPrompt } from "./src/config.js";
 
 /**
  * Main application entry point.
  */
 async function main() {
-  const { modelId, systemPrompt, dtype } = CONFIG;
   const huggingFaceToken = process.env.HUGGINGFACE_TOKEN;
 
   try {
-    const generator = await initModel(modelId, dtype, huggingFaceToken);
+    const generator = await initModel(inference.modelId, inference.dtype, huggingFaceToken);
     await startChat(generator, systemPrompt);
   } catch (error) {
     console.error(`\nCRITICAL ERROR: ${error.message}`);
