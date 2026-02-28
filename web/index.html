@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo</title>
+</head>
+
+<body>
+    <label for="text-to-insert">Text to insert:</label>
+    <input type="text" id="text-to-insert" name="text-to-insert">
+    <button id="insert-text">Insert</button>
+    <ul id="records"></ul>
+    <hr>
+    <label for="query-text">Query:</label>
+    <input type="text" id="query-text">
+    <button id="query-button">Query</button>
+    <button id="count-tokens">Count tokens</button>
+    <div>
+        Token count: <span id="token-count">?</span> tokens.
+    </div>
+    <ul id="query-results"></ul>
+    <script type="module" src="index.js"></script>
+</body>
+
+</html>

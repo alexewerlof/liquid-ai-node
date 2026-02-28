@@ -10,12 +10,20 @@
   "scripts": {
     "discover": "node discover-content.js",
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "vendeps": "vendeps"
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
+    "idb": "^8.0.3",
+    "jj": "^2.7.2",
     "jty": "^4.0.0",
     "onnxruntime-node": "1.24.2"
+  },
+  "devDependencies": {
+    "vendeps": "^1.0.1"
+  },
+  "vendeps": {
+    "onnxruntime-node": false
   },
   "overrides": {
     "onnxruntime-node": "$onnxruntime-node"
