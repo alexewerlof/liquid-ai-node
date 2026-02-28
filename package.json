@@ -20,7 +20,7 @@
     "onnxruntime-node": "1.24.2"
   },
   "devDependencies": {
-    "vendeps": "^1.0.1"
+    "vendeps": "^1.0.2"
   },
   "vendeps": {
     "onnxruntime-node": false
