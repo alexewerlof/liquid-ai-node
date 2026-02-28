@@ -8,6 +8,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "discover": "node discover-content.js",
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

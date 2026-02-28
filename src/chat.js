@@ -1,9 +1,11 @@
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 import { streamCompletion } from "./model.js";
-import { ingestContent, augmentQuery } from "./rag.js";
+import { RAG } from "./RAG.js";
 import { Embedder } from "./Embedder.js";
+import { VectorStore } from "./VectorStore.js";
 import { embedding } from "./config.js";
+import { ingestFromContentJson } from "./ingest.js";
 
 /**
  * Checks whether user input is an exit command.
@@ -30,7 +32,10 @@ export async function startChat(generator, systemPromptContent, generationOption
   console.log("Initializing RAG...");
   const embedder = new Embedder();
   await embedder.init(embedding.modelId, embedding.options);
-  await ingestContent(embedder);
+
+  const vectorStore = new VectorStore();
+  const rag = new RAG(embedder, vectorStore);
+  await ingestFromContentJson(rag);
 
   if (systemPromptContent) {
     messages.push({ role: "system", content: systemPromptContent });
@@ -45,9 +50,9 @@ export async function startChat(generator, systemPromptContent, generationOption
     }
 
     // Augment the query with relevant context from the knowledge base
-    console.time(`RAG lookup`)
-    const augmentedInput = await augmentQuery(embedder, userInput);
-    console.timeEnd(`RAG lookup`)
+    console.time(`RAG lookup`);
+    const augmentedInput = await rag.augmentQuery(userInput);
+    console.timeEnd(`RAG lookup`);
 
     // Pass augmented prompt to model, but store original in history
     messages.push({ role: "user", content: augmentedInput });

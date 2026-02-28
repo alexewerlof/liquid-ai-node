@@ -8,16 +8,19 @@ This repo is a feasibility test for running Liquid AI models via `@huggingface/t
 
 ### Key Files
 
-| File | Purpose |
-|---|---|
-| `index.js` | Entry point — initializes model and starts interactive chat |
-| `src/config.js` | Model IDs, generation params, and system prompt |
-| `src/runtime.js` | Shared ONNX runtime setup (cacheDir, backend) |
-| `src/model.js` | Model loading + callback-based `streamCompletion` |
-| `src/chat.js` | Interactive chat loop using `for await` token streaming |
-| `src/rag.js` | RAG pipeline: load content, embed, retrieve context |
-| `src/embeddings.js` | Embedding model wrapper |
-| `src/vector_store.js` | In-memory vector store for similarity search |
+| File | Purpose | Portable? |
+|---|---|---|
+| `index.js` | Entry point — initializes model and starts interactive chat | Node-only |
+| `discover-content.js` | Scans `./content` for `.md` files → writes `content.json` | Node-only |
+| `content.json` | Generated manifest of content files (used at runtime by both environments) | Generated |
+| `src/config.js` | Model IDs, generation params, and system prompt | ✅ |
+| `src/runtime.js` | Environment-aware ONNX runtime setup + `getDevice()` | ✅ |
+| `src/model.js` | Model loading + callback-based `streamCompletion` | ✅ |
+| `src/Embedder.js` | Embedding model wrapper | ✅ |
+| `src/VectorStore.js` | In-memory vector store for similarity search | ✅ |
+| `src/rag.js` | Portable RAG class: chunking, embedding, context retrieval | ✅ |
+| `src/ingest.js` | Loads content files from filesystem into RAG | Node-only |
+| `src/chat.js` | Interactive chat loop with RAG integration | Node-only |
 
 ---
 
@@ -111,13 +114,14 @@ Use the latest stable features available in current Node.js (v22+) and modern br
 
 ## Environment & Portability
 
-- **Dual-target.** Code should be portable between Node.js and the browser wherever feasible.
+- **Dual-target.** Code in `src/` is portable between Node.js and the browser unless noted as "Node-only" above.
 - **Library.** Use only `@huggingface/transformers` (Transformers.js v3+) for ONNX inference.
+- **Runtime detection.** `src/runtime.js` detects the environment and conditionally loads `onnxruntime-node` via dynamic import (Node) or uses WebGPU/WASM (browser). Import `getDevice()` to detect the best available compute device.
 - **Hardware acceleration:**
-  - Node.js → `onnxruntime-node`
+  - Node.js → `onnxruntime-node` (CPU)
   - Browser → WebGPU (primary), WASM (fallback)
-  - Handle environment differences gracefully (conditional imports or runtime checks).
-- **Cache.** Set `env.cacheDir` to `./.cache` in Node.js for offline-first model access.
+- **Cache.** Transformers.js handles caching per environment: `env.cacheDir = './.cache'` on Node, native Cache API on browser.
+- **Content discovery.** Run `npm run discover` to generate `content.json` from `./content/**/*.md`. Both environments read this manifest at runtime.
 
 ---
 
