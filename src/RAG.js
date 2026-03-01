@@ -62,35 +62,38 @@ export class RAG {
   /**
    * Retrieves the most relevant context for a user query.
    * @param {string} query - The user query.
-   * @param {number} [minScore=0.3] - Minimum similarity score (0-1).
-   * @param {number} [maxResults=3] - Maximum number of results.
+   * @param {number} [minScore] - Minimum similarity score (0-1). See VectorStore.similarEmbeddings.
+   * @param {number} [maxResults] - Maximum number of results. See VectorStore.similarEmbeddings.
    * @returns {Promise<string>} Concatenated context string, or empty string if no results.
    */
-  async getRelevantContext(query, minScore = 0.3, maxResults = 3) {
+  async getRelevantContext(query, minScore, maxResults) {
     const queryEmbedding = await this.#embedder.embed(query);
-    const results = this.#vectorStore.search(queryEmbedding, minScore, maxResults);
-
-    console.log(`RAG found ${results.length} items. Similarity: ${results.map(r => r.score).join(", ")}.`);
-
-    if (results.length === 0) return "";
-    return results.map(result => `[Source: ${result.metadata.filename}]\n${result.text}`).join("\n\n");
+    return this.#vectorStore.similarEmbeddings(queryEmbedding, minScore, maxResults);
   }
 
   /**
    * Augments a user query with retrieved context from the knowledge base.
    * @param {string} query - The user query.
+   * @param {number} [minScore] - Minimum similarity score (0-1). See VectorStore.similarEmbeddings.
+   * @param {number} [maxResults] - Maximum number of results. See VectorStore.similarEmbeddings.
    * @returns {Promise<string>} The augmented prompt, or original query if no context found.
    */
-  async augmentQuery(query) {
-    const context = await this.getRelevantContext(query);
-    if (!context) return query;
+  async augmentQuery(query, minScore, maxResults) {
+    const context = await this.getRelevantContext(query, minScore, maxResults);
+    if (context.length === 0) {
+      console.log("No RAG context found for query");
+      return query;
+    }
 
+    console.log(`Found ${context.length} RAG context for query. Similarity scores: ${context.map(r => r.score.toFixed(3)).join(", ")}`);
     return [
       "### Context from Knowledge Base:",
-      context,
+      ...context.map(r => `[Source: ${r.metadata.filename}]\n${r.text}`),
       "### User Question:",
       query,
-      "Please answer the user's question accurately using only the provided context above. If the context doesn't contain the answer, say you don't know."
+      "Please answer the user's question accurately using only the provided context above.",
+      "If the context doesn't contain the answer, say you don't know.",
+      "Do **NOT** mention that you are using a knowledge base or any other form of external information."
     ].join("\n");
   }
 }

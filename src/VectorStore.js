@@ -50,14 +50,14 @@ export class VectorStore {
   /**
    * Searches for the most similar documents.
    * @param {number[]} queryEmbedding - The embedding of the query.
-   * @param {number} minScore - Minimum similarity score (0-1) required for a result to be included.
-   * @param {number} maxResults - Maximum number of results to return.
+   * @param {number} [minScore=0.3] - Minimum similarity score (0-1) required for a result to be included.
+   * @param {number} [maxResults=0] - Maximum number of results to return.
    * @returns {Array<{text: string, metadata: object, score: number}>}
    */
-  search(queryEmbedding, minScore, maxResults) {
+  similarEmbeddings(queryEmbedding, minScore = 0.3, maxResults = 0) {
     if (!isArr(queryEmbedding)) throw new Error("queryEmbedding must be an array");
     if (!inRange(minScore, 0, 1)) throw new Error("minScore must be a number between 0 and 1");
-    if (!isInt(maxResults) || maxResults <= 0) throw new Error("maxResults must be a positive integer");
+    if (!isInt(maxResults) || maxResults < 0) throw new Error("maxResults must be 0 or a positive integer");
 
     const results = [];
     for (const [text, { embedding, metadata }] of this.documents.entries()) {
@@ -68,7 +68,7 @@ export class VectorStore {
     }
 
     results.sort((a, b) => b.score - a.score);
-    if (results.length > maxResults) {
+    if (maxResults > 0 && results.length > maxResults) {
       results.length = maxResults;
     }
 
