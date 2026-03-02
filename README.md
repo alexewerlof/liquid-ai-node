@@ -53,5 +53,13 @@ During each response, the application provides detailed performance data:
 - **TTFT:** Time to first token (prompt processing latency).
 - **Total Time:** End-to-end duration for the request.
 
+## Troubleshooting WebGPU
+- https://developer.chrome.com/docs/web-platform/webgpu/troubleshooting-tips
+- https://webgpureport.org/
+- On Fedora Silverblue, I enabled chrome://flags/#enable-unsafe-webgpu and chrome://flags/#enable-vulkan
+- There's also chrome://gpu
+- Firefox: https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Experimental_features#:~:text=tested%20by%20Firefox.-,WebGPU%20API,-The%20WebGPU%20API
+- Safari: https://webkit.org/blog/14879/webgpu-now-available-for-testing-in-safari-technology-preview/
+
 ## License
 ISC
