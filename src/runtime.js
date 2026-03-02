@@ -9,6 +9,19 @@
  */
 
 import { pipeline, env } from "@huggingface/transformers";
+import { pipelineProgressReporter } from "./util.js";
+
+/*
+ * Tips for future development:
+ * Disable the loading of remote models from the Hugging Face Hub:
+ * env.allowRemoteModels = false;
+ *
+ * Set location of .wasm files. Defaults to use a CDN.
+ * env.backends.onnx.wasm.wasmPaths = '/path/to/files/';
+ * 
+ * Specify a custom location for models (defaults to '/models/').
+ * env.localModelPath = "/huggingface";
+ */
 
 export const isNode = typeof process !== "undefined" && !!process.versions?.node;
 
@@ -27,18 +40,19 @@ if (isNode) {
  * @returns {Promise<string>} "webgpu" or "cpu"
  */
 export async function getDevice() {
-  if (!isNode && typeof navigator !== "undefined" && navigator.gpu) {
-    try {
-      const adapter = await navigator.gpu.requestAdapter();
-      if (adapter) {
-        console.log("Using WebGPU for inference.");
-        return "webgpu";
-      }
-    } catch (e) {
-      console.warn("WebGPU detection failed:", e);
-    }
+  try {
+    const adapter = await navigator?.gpu?.requestAdapter();
+    return adapter ? "webgpu" : "cpu";
+  } catch (e) {
+    return "cpu";
   }
-  return "cpu";
 }
 
-export { pipeline };
+export async function createPipeline(task, model, options = {}) {
+  const device = await getDevice();
+  return await pipeline(task, model, {
+    device,
+    progress_callback: pipelineProgressReporter,
+    ...options
+  });
+}

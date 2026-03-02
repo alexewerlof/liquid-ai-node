@@ -1,6 +1,6 @@
 import { TextStreamer } from "@huggingface/transformers";
-import { pipeline } from "./runtime.js";
 import { isFn, isStr } from "jty";
+import { createPipeline } from "./runtime.js";
 
 /**
  * Initializes the text-generation pipeline.
@@ -14,7 +14,7 @@ export async function initModel(modelId, options = {}) {
   }
 
   try {
-    return await pipeline("text-generation", modelId, options);
+    return await createPipeline("text-generation", modelId, options);
   } catch (error) {
     throw new Error(`Failed to load model "${modelId}": ${error.message}`);
   }

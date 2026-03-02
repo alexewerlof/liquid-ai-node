@@ -1,5 +1,5 @@
-import { pipeline } from "./runtime.js";
 import { isStr } from "jty";
+import { createPipeline } from "./runtime.js";
 
 /**
  * Manages the embedding model lifecycle and generates embeddings.
@@ -23,7 +23,7 @@ export class Embedder {
     
     try {
       console.time(`Init embedder ${modelId}`)
-      this.#pipeline = await pipeline("feature-extraction", modelId, options);
+      this.#pipeline = await createPipeline("feature-extraction", modelId, options);
       console.timeEnd(`Init embedder ${modelId}`)
       return this.#pipeline;
     } catch (error) {

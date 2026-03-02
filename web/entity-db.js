@@ -1,52 +1,8 @@
 import { openDB } from "../dependencies/idb.js";
 import { env, pipeline } from "../dependencies/@huggingface/transformers.js";
-
-// Specify a custom location for models (defaults to '/models/').
-env.localModelPath = "/huggingface";
-
-// Disable the loading of remote models from the Hugging Face Hub:
-// env.allowRemoteModels = false;
-
-// Set location of .wasm files. Defaults to use a CDN.
-// env.backends.onnx.wasm.wasmPaths = '/path/to/files/';
-
-// Troubleshooting WebGPU: https://developer.chrome.com/docs/web-platform/webgpu/troubleshooting-tips
-// More at: https://webgpureport.org/
-// On Fedora Silverblue, I enabled chrome://flags/#enable-unsafe-webgpu and chrome://flags/#enable-vulkan
-// There's also chrome://gpu
-// Firefox: https://developer.mozilla.org/en-US/docs/Mozilla/Firefox/Experimental_features#:~:text=tested%20by%20Firefox.-,WebGPU%20API,-The%20WebGPU%20API
-// Safari: https://webkit.org/blog/14879/webgpu-now-available-for-testing-in-safari-technology-preview/
-// Helper to determine the best available compute device
-async function getAcceleratedDevice() {
-    if (typeof navigator !== 'undefined' && navigator.gpu) {
-        try {
-            const adapter = await navigator.gpu.requestAdapter();
-            if (adapter) {
-                console.log("Using WebGPU for inference.");
-                return "webgpu";
-            }
-        } catch (e) {
-            console.warn("WebGPU detection failed:", e);
-        }
-    }
-    console.log("WebGPU not available. Falling back to CPU.");
-    return "cpu"; // Fallback to CPU
-}
-
-// Cosine similarity function
-function cosineSimilarity(vecA, vecB) {
-    const dotProduct = vecA.reduce(
-        (sum, val, index) => sum + val * vecB[index],
-        0
-    );
-    const magnitudeA = Math.sqrt(vecA.reduce((sum, val) => sum + val * val, 0));
-    const magnitudeB = Math.sqrt(vecB.reduce((sum, val) => sum + val * val, 0));
-    return dotProduct / (magnitudeA * magnitudeB);
-};
-
-export class TransformerEngine {
-
-}
+import { getDevice } from "../src/runtime.js";
+import { cosineSimilarity } from "../src/VectorStore.js";
+import { pipelineProgressReporter } from "../src/util.js";
 
 // Inspired by EntityDB
 // Find models that are compatible from this URL: https://huggingface.co/models?library=transformers.js&sort=trending
@@ -81,52 +37,17 @@ export class RAGEngine {
                 }
             },
         });
-        const device = await getAcceleratedDevice();
+        const device = await getDevice();
         this.extractor = await pipeline(this.task, this.model, {
             device,
-            progress_callback(progressObg) {
-                // console.log('Progress event', progressObg);
-                // A single name like 'Xenova/all-MiniLM-L6-v2' may initiate downloading and loading
-                // multiple files like 'tokenizer_config.json', 'config.json', 'onnx/model_quantized.onnx', etc.
-                // There can be repetitive events.
-                // The value of `total` may change for the same file (usually it's the total size)
-                const { name, file, status, progress, total, task, model } = progressObg
-
-                switch (status) {
-                    case 'initiate':
-                        // Defined: name, file
-                        console.debug(`File Initiate:\nName: ${name}, File: ${file}`)
-                        break
-                    case 'download':
-                        // Fired at the start of the download/load
-                        // Defined: name, file
-                        console.debug(`File Download:\nName: ${name}, File: ${file}`)
-                        break
-                    case 'progress':
-                        // Fired with progress=100 if the file is already downloaded
-                        // Defined: name, file, progress, total
-                        console.debug(`File Progress:\nName: ${name}, File: ${file}, Progress: ${progress.toFixed(2)}% Total: ${total}`)
-                        break
-                    case 'ready':
-                        // Defined: task, model
-                        console.debug(`Task Ready:\nTask: ${task}, Model ${model}`);
-                        break
-                    case 'done':
-                        // Defined: name, file
-                        console.debug(`File Done:\nName: ${name}, File: ${file}`)
-                        break
-                    default:
-                        console.log(`Unknown status: ${status}`)
-                }
-            }
+            progress_callback: pipelineProgressReporter,
         });
     }
 
     async isModelCached(modelFile = 'onnx/model.onnx', cacheName = 'transformers-cache') {
-        const cacheKey = `https://huggingface.co/${this.model}/resolve/main/${modelFile}`;
-
         try {
             const cache = await caches.open(cacheName);
+            const cacheKey = `https://huggingface.co/${this.model}/resolve/main/${modelFile}`;
             const response = await cache.match(cacheKey);
             return response !== undefined;
         } catch (e) {
@@ -253,47 +174,13 @@ export class RAGEngine {
 // Code from: https://huggingface.co/onnx-community/Phi-3.5-mini-instruct-onnx-web
 
 // Create a text generation pipeline
-const device = await getAcceleratedDevice();
+const device = await getDevice();
 const generator = await pipeline(
     "text-generation",
     "onnx-community/Phi-3.5-mini-instruct-onnx-web", {
-    device,
-    progress_callback(progressObg) {
-        // console.log('Progress event', progressObg);
-        // A single name like 'Xenova/all-MiniLM-L6-v2' may initiate downloading and loading
-        // multiple files like 'tokenizer_config.json', 'config.json', 'onnx/model_quantized.onnx', etc.
-        // There can be repetitive events.
-        // The value of `total` may change for the same file (usually it's the total size)
-        const { name, file, status, progress, total, task, model } = progressObg
-
-        switch (status) {
-            case 'initiate':
-                // Defined: name, file
-                console.debug(`File Initiate:\nName: ${name}, File: ${file}`)
-                break
-            case 'download':
-                // Fired at the start of the download/load
-                // Defined: name, file
-                console.debug(`File Download:\nName: ${name}, File: ${file}`)
-                break
-            case 'progress':
-                // Fired with progress=100 if the file is already downloaded
-                // Defined: name, file, progress, total
-                console.debug(`File Progress:\nName: ${name}, File: ${file}, Progress: ${progress.toFixed(2)}% Total: ${total}`)
-                break
-            case 'ready':
-                // Defined: task, model
-                console.debug(`Task Ready:\nTask: ${task}, Model ${model}`);
-                break
-            case 'done':
-                // Defined: name, file
-                console.debug(`File Done:\nName: ${name}, File: ${file}`)
-                break
-            default:
-                console.log(`Unknown status: ${status}`)
-        }
-    }
-}
+        device,
+        progress_callback: pipelineProgressReporter,
+    },
 );
 
 // Define the list of messages
