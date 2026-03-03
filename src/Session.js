@@ -1,7 +1,4 @@
-import { isFn, isStr } from "jty";
-import { createPipeline } from "./runtime.js";
-import { TextStreamer } from "@huggingface/transformers";
-import { systemPrompt } from "./config.js";
+import { isDef, isStr } from "jty";
 
 const SUPPORTED_ROLES = ['system', 'user', 'assistant']
 
@@ -28,41 +25,22 @@ export function assistantMessage(content) {
 }
 
 export class Session {
-    #pipeline = null
     #messages = []
 
-    constructor() {
-        this.addMessage(systemMessage(systemPrompt))
-    }
-
-    async init(model_name, options) {
-        this.#pipeline = await createPipeline('text-generation', model_name, options)
+    constructor(systemPrompt) {
+        if (isDef(systemPrompt)) {
+            if (!isStr(systemPrompt)) {
+                throw new TypeError(`Expected systemPrompt to be a string, but got ${systemPrompt} (${typeof systemPrompt})`)
+            }
+            this.addMessage(systemMessage(systemPrompt))
+        }
     }
 
     addMessage(message) {
         this.#messages.push(message)
     }
 
-    async complete(options, onToken) {
-        const onTokenIsFn = isFn(onToken)
-
-        const buffer = []
-        const streamer = new TextStreamer(this.#pipeline.tokenizer, {
-            skip_prompt: true,
-            skip_special_tokens: true,
-            callback_function(token) {
-                buffer.push(token)
-                if (onTokenIsFn) {
-                    try {
-                        onToken(token)
-                    } catch (e) {
-                        console.error(`Error calling onToken: ${e}`)
-                    }
-                }
-            },
-        });
-
-        await this.#pipeline(this.#messages, { ...options, streamer });
-        return buffer.join('')
+    get messages() {
+        return this.#messages
     }
 }

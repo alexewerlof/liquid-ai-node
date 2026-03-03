@@ -1,12 +1,12 @@
-import { isStr } from "jty";
-import { createPipeline } from "./runtime.js";
+import { isStr } from "jty"
+import { createPipeline } from "./runtime.js"
 
 /**
  * Manages the embedding model lifecycle and generates embeddings.
  * Wraps the Transformers.js feature-extraction pipeline with lazy initialization.
  */
 export class Embedder {
-  #pipeline = null;
+  #pipeline = null
 
   /**
    * Initializes the embedding pipeline. Safe to call multiple times — returns cached pipeline.
@@ -15,19 +15,19 @@ export class Embedder {
    * @returns {Promise<object>} The feature-extraction pipeline instance.
    */
   async init(modelId, options = {}) {
-    if (this.#pipeline) return this.#pipeline;
+    if (this.#pipeline) return this.#pipeline
 
     if (!isStr(modelId)) {
-      throw new TypeError(`Expected string for modelId, but got ${modelId} (${typeof modelId})`);
+      throw new TypeError(`Expected string for modelId, but got ${modelId} (${typeof modelId})`)
     }
     
     try {
       console.time(`Init embedder ${modelId}`)
-      this.#pipeline = await createPipeline("feature-extraction", modelId, options);
+      this.#pipeline = await createPipeline("feature-extraction", modelId, options)
       console.timeEnd(`Init embedder ${modelId}`)
-      return this.#pipeline;
+      return this
     } catch (error) {
-      throw new Error(`Failed to load embedding model "${modelId}": ${error.message}`);
+      throw new Error(`Failed to load embedding model "${modelId}": ${error.message}`)
     }
   }
 
@@ -39,18 +39,18 @@ export class Embedder {
    */
   async embed(text) {
     if (!this.#pipeline) {
-      throw new Error("Embedder not initialized. Call init(modelId, options) first.");
+      throw new Error("Embedder not initialized. Call init(modelId, options) first.")
     }
 
-    const snippet = text.slice(0, 15);
-    const logMsg = `${snippet}... (${text.length} chars)`;
-    console.time(logMsg);
+    const snippet = text.slice(0, 15)
+    const logMsg = `${snippet}... (${text.length} chars)`
+    console.time(logMsg)
     const output = await this.#pipeline(text, {
       pooling: "mean",
       normalize: true,
-    });
-    console.timeEnd(logMsg);
+    })
+    console.timeEnd(logMsg)
 
-    return Array.from(output.data);
+    return Array.from(output.data)
   }
 }
