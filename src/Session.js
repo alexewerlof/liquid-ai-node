@@ -44,16 +44,25 @@ export class Session {
     }
 
     async complete(options, onToken) {
-        if (!isFn(onToken)) {
-            throw new TypeError(`Expected a function for onToken. Got ${onToken} (${typeof onToken})`);
-        }
+        const onTokenIsFn = isFn(onToken)
 
+        const buffer = []
         const streamer = new TextStreamer(this.#pipeline.tokenizer, {
             skip_prompt: true,
             skip_special_tokens: true,
-            callback_function: isFn(onToken) ? onToken : undefined,
+            callback_function(token) {
+                buffer.push(token)
+                if (onTokenIsFn) {
+                    try {
+                        onToken(token)
+                    } catch (e) {
+                        console.error(`Error calling onToken: ${e}`)
+                    }
+                }
+            },
         });
-    
+
         await this.#pipeline(this.#messages, { ...options, streamer });
+        return buffer.join('')
     }
 }
