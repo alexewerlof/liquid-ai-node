@@ -22,6 +22,7 @@ export const inference = fz({
     dtype: "q4",
   }),
   generation: fz({
+    // See all configs: https://huggingface.co/docs/transformers/en/main_classes/text_generation#transformers.GenerationConfig
     max_new_tokens: 512,
     temperature: 0.7,
     return_full_text: false,
