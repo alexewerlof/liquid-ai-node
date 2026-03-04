@@ -15,7 +15,6 @@ This repo is a feasibility test for running Liquid AI models via `@huggingface/t
 | `content.json` | Generated manifest of content files (used at runtime by both environments) | Generated |
 | `src/config.js` | Model IDs, generation params, and system prompt | ✅ |
 | `src/runtime.js` | Environment-aware ONNX runtime setup + `getDevice()` | ✅ |
-| `src/model.js` | Model loading + callback-based `streamCompletion` | ✅ |
 | `src/Embedder.js` | Embedding model wrapper | ✅ |
 | `src/VectorStore.js` | In-memory vector store for similarity search | ✅ |
 | `src/rag.js` | Portable RAG class: chunking, embedding, context retrieval | ✅ |
@@ -31,6 +30,18 @@ This repo is a feasibility test for running Liquid AI models via `@huggingface/t
 - **Keep `AGENTS.md` up to date.** Whenever you add, remove, or change code (files, exports, dependencies, behavior), update this document to reflect the change. This serves two purposes:
   1. It gives the user a human-readable summary of what changed and why.
   2. It enables knowledge handover — another agent or a future session can read this file and immediately understand the current state of the project.
+
+---
+
+## Test
+
+- Use the native Node.js test framework.
+- Name the test files after the file they're testing (eg. the test for `x.js` is called `x.test.js` in the same directory)
+- Use `describe('FUNCTION_NAME()')` to group all tests for a given function or class.
+- Use `test('TEST_DESCRIPTION')` to describe each test.
+- Use `assert` for assertions.
+- Use `try...catch` around model loading and inference — these can fail due to OOM, missing models, or network issues.
+- Use table testing for pure functions.
 
 ---
 
@@ -155,3 +166,6 @@ Use the latest stable features available in current Node.js (v22+) and modern br
 - [Liquid AI Documentation](https://liquid.ai/)
 - [Hugging Face Transformers.js Docs](https://huggingface.co/docs/transformers.js/)
 - [ONNX Runtime Web/Node](https://onnxruntime.ai/docs/api/js/index.html)
+
+## Pure Function Encapsulation
+It is totally fine to encapsulate logic into pure functions and put them outside a class. If these functions are only used within that specific class, they should be kept in the same file as the class.

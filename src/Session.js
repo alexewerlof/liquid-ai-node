@@ -1,28 +1,6 @@
 import { isDef, isStr } from "jty";
-
-const SUPPORTED_ROLES = ['system', 'user', 'assistant']
-
-function message(role, content) {
-    if (!SUPPORTED_ROLES.includes(role)) {
-        throw new Error(`Unsupported role: ${role}`)
-    }
-    if (!isStr(content)) {
-        throw new Error(`Expected content to be a string, but got ${content} (${typeof content})`)
-    }
-    return { role, content }
-}
-
-export function systemMessage(content) {
-    return message('system', content)
-}
-
-export function userMessage(content) {
-    return message('user', content)
-}
-
-export function assistantMessage(content) {
-    return message('assistant', content)
-}
+import { SystemMessage } from "./msg/SystemMessage.js";
+import { BaseWMsg } from "./msg/BaseWMsg.js";
 
 export class Session {
     #messages = []
@@ -32,15 +10,27 @@ export class Session {
             if (!isStr(systemPrompt)) {
                 throw new TypeError(`Expected systemPrompt to be a string, but got ${systemPrompt} (${typeof systemPrompt})`)
             }
-            this.addMessage(systemMessage(systemPrompt))
+            this.addWMsg(new SystemMessage(systemPrompt))
         }
     }
 
-    addMessage(message) {
+    addWMsg(message) {
+        if (!BaseWMsg.isBaseMsgObj(message)) {
+            throw new TypeError(`Expected a message, but got ${message} (${typeof message})`)
+        }
         this.#messages.push(message)
     }
 
     get messages() {
         return this.#messages
+    }
+
+    toMessages() {
+        return this.#messages.map(m => {
+            if (typeof m.toJSON === 'function') {
+                return m.toJSON()
+            }
+            return m
+        })
     }
 }

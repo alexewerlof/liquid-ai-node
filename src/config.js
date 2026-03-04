@@ -17,7 +17,7 @@ export const systemPrompt = [
 
 // Inference model configuration (text-generation)
 export const inference = fz({
-  modelId: "onnx-community/LFM2-1.2B-ONNX",
+  modelId: "onnx-community/LFM2-1.2B-Tool-ONNX",
   options: fz({
     dtype: "q4",
   }),

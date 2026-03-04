@@ -1,34 +1,50 @@
-import { isA, isArr, isDef, isFn } from "jty";
-import { createPipeline } from "./runtime.js";
-import { TextStreamer, StoppingCriteria, StoppingCriteriaList } from "@huggingface/transformers";
+import { isA, isArr, isDef, isFn, isStr } from 'jty'
+import { createPipeline } from './runtime.js'
+import {
+    TextStreamer,
+    StoppingCriteria,
+    StoppingCriteriaList,
+} from '@huggingface/transformers'
 
 class SignalStoppingCriteria extends StoppingCriteria {
     constructor(signal) {
-        super();
+        super()
         if (!isA(signal, AbortSignal)) {
-            throw new TypeError(`Expected signal to be an AbortSignal, but got ${signal} (${typeof signal})`)
+            throw new TypeError(
+                `Expected signal to be an AbortSignal, but got ${signal} (${typeof signal})`,
+            )
         }
-        this.signal = signal;
+        this.signal = signal
     }
     _call(input_ids, scores) {
         if (this.signal?.aborted) {
-            return new Array(input_ids.length).fill(true);
+            return new Array(input_ids.length).fill(true)
         }
-        return new Array(input_ids.length).fill(false);
+        return new Array(input_ids.length).fill(false)
     }
 }
 
 export class TransformerLLM {
     #pipeline = null
 
+    get pipeline() {
+        return this.#pipeline
+    }
+
     async init(model_name, options) {
-        this.#pipeline = await createPipeline('text-generation', model_name, options)
+        this.#pipeline = await createPipeline(
+            'text-generation',
+            model_name,
+            options,
+        )
         return this
     }
 
     async complete(messages, options, onToken, signal) {
-        if (!isArr(messages)) {
-            throw new TypeError(`Expected messages to be an array, but got ${messages} (${typeof messages})`)
+        if (!isArr(messages) && !isStr(messages)) {
+            throw new TypeError(
+                `Expected messages to be an array or string, but got ${messages} (${typeof messages})`,
+            )
         }
         if (!this.#pipeline) {
             throw new Error('Pipeline not initialized. Call init() first.')
@@ -38,7 +54,7 @@ export class TransformerLLM {
         const buffer = []
         const streamer = new TextStreamer(this.#pipeline.tokenizer, {
             skip_prompt: true,
-            skip_special_tokens: true,
+            skip_special_tokens: options?.skip_special_tokens ?? true,
             callback_function(token) {
                 buffer.push(token)
                 if (onTokenIsFn) {
@@ -49,19 +65,22 @@ export class TransformerLLM {
                     }
                 }
             },
-        });
+        })
 
         const pipelineOptions = { ...options, streamer }
-        if (isDef(signal)){
+
+        if (isDef(signal)) {
             if (!isA(signal, AbortSignal)) {
-                throw new TypeError(`Expected signal to be an AbortSignal, but got ${signal} (${typeof signal})`)
+                throw new TypeError(
+                    `Expected signal to be an AbortSignal, but got ${signal} (${typeof signal})`,
+                )
             }
             const stoppingCriteriaList = new StoppingCriteriaList()
             stoppingCriteriaList.push(new SignalStoppingCriteria(signal))
             pipelineOptions.stopping_criteria = stoppingCriteriaList
         }
 
-        await this.#pipeline(messages, pipelineOptions);
-        return buffer.join('')
+        const result = await this.#pipeline(messages, pipelineOptions)
+        return result
     }
 }

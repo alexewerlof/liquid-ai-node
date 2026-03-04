@@ -1,4 +1,24 @@
+import { isDef, isArr } from 'jty';
+
+export function getFirstMessage(completion) {
+    if (Array.isArray(completion) && completion.length > 0) {
+        if (completion[0].generated_text && Array.isArray(completion[0].generated_text)) {
+            return completion[0].generated_text.at(-1);
+        }
+        if (completion[0].message) {
+            return completion[0].message; // OpenAI format just in case
+        }
+    }
+    return completion;
+}
+
+export function isToolsCallMessage(message) {
+    if (!message) return false;
+    return isDef(message.tool_calls) && isArr(message.tool_calls) && message.tool_calls.length > 0;
+}
+
 function simpleProgressBar(percent) {
+
     const filled = '█'.repeat(Math.round(percent / 10));
     const empty = '░'.repeat(10 - filled.length);
     return `${filled}${empty} ${percent.toFixed(2)}%`;

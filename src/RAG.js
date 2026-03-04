@@ -87,13 +87,11 @@ export class RAG {
 
     console.log(`Found ${context.length} RAG context for query. Similarity scores: ${context.map(r => r.score.toFixed(3)).join(", ")}`);
     return [
-      "### Context from Knowledge Base:",
-      ...context.map(r => `[Source: ${r.metadata.filename}]\n${r.text}`),
-      "### User Question:",
+      "Background information context to help answer the user:",
+      ...context.map(r => r.text),
+      "",
+      "User Question:",
       query,
-      "Please answer the user's question accurately using only the provided context above.",
-      "If the context doesn't contain the answer, say you don't know.",
-      "Do **NOT** mention that you are using a knowledge base or any other form of external information."
     ].join("\n");
   }
 }
