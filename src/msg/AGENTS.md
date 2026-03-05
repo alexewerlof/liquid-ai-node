@@ -2,6 +2,7 @@ All files in this directory wrap the message object from the OpenAI API.
 
 The `BaseWMsg` class is the base class for all wrapped messages. It only has the `role` property.
 The `ContentWMsg` class is the base class for all wrapped messages that have a `content` property and used by sugar classes:
+
 - `UserWMsg`
 - `AssistantWMsg`
 - `SystemWMsg`

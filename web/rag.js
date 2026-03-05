@@ -1,8 +1,8 @@
-import { RAG } from "../src/RAG.js";
+import { RAG } from '../src/RAG.js'
 import { doc, JJHE } from '../dependencies/jj.js'
-import { VectorStore } from "../src/VectorStore.js";
-import { Embedder } from "../src/Embedder.js";
-import { h } from "jj";
+import { VectorStore } from '../src/VectorStore.js'
+import { Embedder } from '../src/Embedder.js'
+import { h } from 'jj'
 
 const textInput = doc.find('#text-to-insert', true)
 const insertButton = doc.find('#insert-text', true)
@@ -24,7 +24,7 @@ initRagButton.on('click', async () => {
         const embedder = new Embedder()
         const progressBars = {}
         const ragProgress = doc.find('#rag-progress')
-        await embedder.init("Xenova/all-MiniLM-L6-v2", {
+        await embedder.init('Xenova/all-MiniLM-L6-v2', {
             progress_callback(progressObg) {
                 const { name, file, status, progress, total, task, model } = progressObg
                 function getProgressBar(name) {
@@ -53,22 +53,22 @@ initRagButton.on('click', async () => {
                     default:
                         console.warn(`Unknown status: ${status} in ${JSON.stringify(progressObg)}`)
                 }
-            }
+            },
         })
-        rag = new RAG(embedder, vectorStore);
+        rag = new RAG(embedder, vectorStore)
         console.timeEnd('RAG initialization')
 
         console.time('Adding documents')
-        await rag.addDocument("cat", { timestamp: Date.now() })
-        await rag.addDocument("dog", { timestamp: Date.now() })
-        await rag.addDocument("bird", { timestamp: Date.now() })
-        await rag.addDocument("fish", { timestamp: Date.now() })
-        await rag.addDocument("lizard", { timestamp: Date.now() })
-        await rag.addDocument("snake", { timestamp: Date.now() })
-        await rag.addDocument("turtle", { timestamp: Date.now() })
-        await rag.addDocument("hamster", { timestamp: Date.now() })
-        await rag.addDocument("guinea pig", { timestamp: Date.now() })
-        await rag.addDocument("rabbit", { timestamp: Date.now() })
+        await rag.addDocument('cat', { timestamp: Date.now() })
+        await rag.addDocument('dog', { timestamp: Date.now() })
+        await rag.addDocument('bird', { timestamp: Date.now() })
+        await rag.addDocument('fish', { timestamp: Date.now() })
+        await rag.addDocument('lizard', { timestamp: Date.now() })
+        await rag.addDocument('snake', { timestamp: Date.now() })
+        await rag.addDocument('turtle', { timestamp: Date.now() })
+        await rag.addDocument('hamster', { timestamp: Date.now() })
+        await rag.addDocument('guinea pig', { timestamp: Date.now() })
+        await rag.addDocument('rabbit', { timestamp: Date.now() })
         console.timeEnd('Adding documents')
         doc.find('#rag-section', true).show()
         initRagButton.hide()
@@ -90,14 +90,12 @@ insertButton.on('click', async () => {
         const id = await rag.addDocument(text, { timestamp: Date.now() })
         console.timeEnd(`Inserting ${text}`)
         textInput.setValue('')
-        records.addChild(
-            JJHE.create('li').setText(`${id}: ${text}`)
-        )
+        records.addChild(JJHE.create('li').setText(`${id}: ${text}`))
         console.debug(`${id}: ${text}`)
     } catch (e) {
         console.error(e)
     }
-});
+})
 
 queryInput.on('keyup', (evt) => {
     if (evt.key === 'Enter') {
@@ -112,12 +110,12 @@ queryButton.on('click', async () => {
         const results = await rag.getRelevantContext(query)
         console.timeEnd(`Querying ${query}`)
         console.debug(results)
-        queryResults.empty().addChildMap(results, r => h('li', null, `${r.score.toFixed(3)} --> ${r.text}`))
+        queryResults.empty().addChildMap(results, (r) => h('li', null, `${r.score.toFixed(3)} --> ${r.text}`))
         queryInput.setValue('')
     } catch (e) {
         console.error(e)
     }
-});
+})
 
 countTokensButton.on('click', () => {
     tokenCount.setText(rag.countTokens(queryInput.getValue()))

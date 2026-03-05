@@ -1,10 +1,6 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import {
-    parsePythonToolCall,
-    formatToolsForLFM2,
-    formatMessagesForLFM2,
-} from './LFMTransformerLLM.js'
+import { parsePythonToolCall, formatToolsForLFM2, formatMessagesForLFM2 } from './LFMTransformerLLM.js'
 
 describe('LFM2 Parser Functions', () => {
     describe('parsePythonToolCall', () => {
@@ -32,9 +28,7 @@ describe('LFM2 Parser Functions', () => {
         })
 
         test('should strip stray tokens from the text', () => {
-            const result = parsePythonToolCall(
-                '<|tool_call_start|>[ping()]<|tool_call_end|>',
-            )
+            const result = parsePythonToolCall('<|tool_call_start|>[ping()]<|tool_call_end|>')
             assert.ok(result)
             assert.equal(result[0].function.name, 'ping')
             assert.equal(result[0].function.arguments, '{}')

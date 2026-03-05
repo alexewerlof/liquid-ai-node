@@ -1,5 +1,5 @@
-import fs from "node:fs/promises";
-import path from "node:path";
+import fs from 'node:fs/promises'
+import path from 'node:path'
 
 /**
  * Loads content files listed in content.json, then chunks and indexes them via the RAG instance.
@@ -9,23 +9,23 @@ import path from "node:path";
  * @param {string} [contentJsonPath="./content.json"] - Path to the content manifest.
  * @returns {Promise<void>}
  */
-export async function ingestFromContentJson(rag, contentDir = "./content", contentJsonPath = "./content.json") {
-  console.time(`Ingest content`);
+export async function ingestFromContentJson(rag, contentDir = './content', contentJsonPath = './content.json') {
+    console.time(`Ingest content`)
 
-  const json = await fs.readFile(contentJsonPath, "utf-8");
-  const files = JSON.parse(json);
+    const json = await fs.readFile(contentJsonPath, 'utf-8')
+    const files = JSON.parse(json)
 
-  console.log(`Ingesting ${files.length} files from "${contentDir}"...`);
+    console.log(`Ingesting ${files.length} files from "${contentDir}"...`)
 
-  let totalChunks = 0;
-  for (const relativePath of files) {
-    const fullPath = path.join(contentDir, relativePath);
-    const text = await fs.readFile(fullPath, "utf-8");
-    const chunks = await rag.addDocument(text, { filename: relativePath });
-    console.log(`  ${relativePath}: ${chunks} chunks`);
-    totalChunks += chunks;
-  }
+    let totalChunks = 0
+    for (const relativePath of files) {
+        const fullPath = path.join(contentDir, relativePath)
+        const text = await fs.readFile(fullPath, 'utf-8')
+        const chunks = await rag.addDocument(text, { filename: relativePath })
+        console.log(`  ${relativePath}: ${chunks} chunks`)
+        totalChunks += chunks
+    }
 
-  console.log(`Indexed ${totalChunks} chunks from ${files.length} files.`);
-  console.timeEnd(`Ingest content`);
+    console.log(`Indexed ${totalChunks} chunks from ${files.length} files.`)
+    console.timeEnd(`Ingest content`)
 }

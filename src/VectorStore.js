@@ -1,4 +1,4 @@
-import { inRange, isArr, isInt } from "jty";
+import { inRange, isArr, isInt } from 'jty'
 
 /**
  * Calculates cosine similarity between two vectors.
@@ -10,17 +10,17 @@ import { inRange, isArr, isInt } from "jty";
  * @returns {number} Similarity score (0-1).
  */
 export function cosineSimilarity(v1, v2) {
-  if (v1.length !== v2.length) {
-    throw new Error(`Vector length mismatch: ${v1.length} vs ${v2.length}`);
-  }
+    if (v1.length !== v2.length) {
+        throw new Error(`Vector length mismatch: ${v1.length} vs ${v2.length}`)
+    }
 
-  let dotProduct = 0;
+    let dotProduct = 0
 
-  for (let i = 0; i < v1.length; i++) {
-    dotProduct += v1[i] * v2[i];
-  }
+    for (let i = 0; i < v1.length; i++) {
+        dotProduct += v1[i] * v2[i]
+    }
 
-  return dotProduct;
+    return dotProduct
 }
 
 /**
@@ -28,79 +28,85 @@ export function cosineSimilarity(v1, v2) {
  * Portable between Node.js and Browser.
  */
 export class VectorStore {
-  /** 
-   * Length of the embedding vectors.
-   * This value is initialized when the first document is added.
-   * After that, it will be used to validate the dimension of the new documents or query embedding.
-   */
-  #embeddingDimension = 0;
+    /**
+     * Length of the embedding vectors.
+     * This value is initialized when the first document is added.
+     * After that, it will be used to validate the dimension of the new documents or query embedding.
+     */
+    #embeddingDimension = 0
 
-  constructor() {
-    this.documents = new Map();
-  }
-
-  /**
-   * Adds a document and its embedding to the store.
-   * @param {string} text - The original text.
-   * @param {number[]} embedding - The vector embedding.
-   * @param {object} [metadata={}] - Optional metadata (e.g., filename).
-   * @returns {boolean} True if added, false if it already existed.
-   */
-  addDocument(text, embedding, metadata = {}) {
-    if (!isArr(embedding)) {
-      throw new TypeError(`Expected embedding to be an array, got ${embedding} (${typeof embedding})`);
-    }
-    if (embedding.length === 0) {
-      throw new RangeError(`Expected embedding to have at least one element, got ${embedding.length}`);
-    }
-    if (this.documents.has(text)) {
-      return false;
-    }
-    if (this.#embeddingDimension === 0) {
-      this.#embeddingDimension = embedding.length;
-    } else if (this.#embeddingDimension !== embedding.length) {
-      throw new RangeError(`Expected embedding dimension to be ${this.#embeddingDimension}, got ${embedding.length}`);
-    }
-    this.documents.set(text, { embedding, metadata });
-    return true;
-  }
-
-  /**
-   * Searches for the most similar documents.
-   * @param {number[]} queryEmbedding - The embedding of the query.
-   * @param {number} [minScore=0.3] - Minimum similarity score (0-1) required for a result to be included.
-   * @param {number} [maxResults=0] - Maximum number of results to return.
-   * @returns {Array<{text: string, metadata: object, score: number}>}
-   */
-  similarEmbeddings(queryEmbedding, minScore = 0.3, maxResults = 0) {
-    if (!isArr(queryEmbedding)) {
-      throw new TypeError(`Expected queryEmbedding to be an array, got ${queryEmbedding} (${typeof queryEmbedding})`);
-    }
-    if (queryEmbedding.length === 0) {
-      throw new RangeError(`Expected queryEmbedding to have at least one element, got ${queryEmbedding.length}`);
-    }
-    if (!inRange(minScore, 0, 1)) {
-      throw new RangeError(`Expected minScore to be a number between 0 and 1, got ${minScore}`);
-    }
-    if (!isInt(maxResults) || maxResults < 0) {
-      throw new RangeError(`Expected maxResults to be 0 or a positive integer, got ${maxResults}`);
-    }
-    if (this.#embeddingDimension && this.#embeddingDimension !== queryEmbedding.length) {
-      throw new RangeError(`Expected embedding dimension to be ${this.#embeddingDimension}, got ${queryEmbedding.length}`);
-    }
-    const results = [];
-    for (const [text, { embedding, metadata }] of this.documents.entries()) {
-      const score = cosineSimilarity(queryEmbedding, embedding);
-      if (score >= minScore) {
-        results.push({ text, metadata, score });
-      }
+    constructor() {
+        this.documents = new Map()
     }
 
-    results.sort((a, b) => b.score - a.score);
-    if (maxResults > 0 && results.length > maxResults) {
-      results.length = maxResults;
+    /**
+     * Adds a document and its embedding to the store.
+     * @param {string} text - The original text.
+     * @param {number[]} embedding - The vector embedding.
+     * @param {object} [metadata={}] - Optional metadata (e.g., filename).
+     * @returns {boolean} True if added, false if it already existed.
+     */
+    addDocument(text, embedding, metadata = {}) {
+        if (!isArr(embedding)) {
+            throw new TypeError(`Expected embedding to be an array, got ${embedding} (${typeof embedding})`)
+        }
+        if (embedding.length === 0) {
+            throw new RangeError(`Expected embedding to have at least one element, got ${embedding.length}`)
+        }
+        if (this.documents.has(text)) {
+            return false
+        }
+        if (this.#embeddingDimension === 0) {
+            this.#embeddingDimension = embedding.length
+        } else if (this.#embeddingDimension !== embedding.length) {
+            throw new RangeError(
+                `Expected embedding dimension to be ${this.#embeddingDimension}, got ${embedding.length}`,
+            )
+        }
+        this.documents.set(text, { embedding, metadata })
+        return true
     }
 
-    return results;
-  }
+    /**
+     * Searches for the most similar documents.
+     * @param {number[]} queryEmbedding - The embedding of the query.
+     * @param {number} [minScore=0.3] - Minimum similarity score (0-1) required for a result to be included.
+     * @param {number} [maxResults=0] - Maximum number of results to return.
+     * @returns {Array<{text: string, metadata: object, score: number}>}
+     */
+    similarEmbeddings(queryEmbedding, minScore = 0.3, maxResults = 0) {
+        if (!isArr(queryEmbedding)) {
+            throw new TypeError(
+                `Expected queryEmbedding to be an array, got ${queryEmbedding} (${typeof queryEmbedding})`,
+            )
+        }
+        if (queryEmbedding.length === 0) {
+            throw new RangeError(`Expected queryEmbedding to have at least one element, got ${queryEmbedding.length}`)
+        }
+        if (!inRange(minScore, 0, 1)) {
+            throw new RangeError(`Expected minScore to be a number between 0 and 1, got ${minScore}`)
+        }
+        if (!isInt(maxResults) || maxResults < 0) {
+            throw new RangeError(`Expected maxResults to be 0 or a positive integer, got ${maxResults}`)
+        }
+        if (this.#embeddingDimension && this.#embeddingDimension !== queryEmbedding.length) {
+            throw new RangeError(
+                `Expected embedding dimension to be ${this.#embeddingDimension}, got ${queryEmbedding.length}`,
+            )
+        }
+        const results = []
+        for (const [text, { embedding, metadata }] of this.documents.entries()) {
+            const score = cosineSimilarity(queryEmbedding, embedding)
+            if (score >= minScore) {
+                results.push({ text, metadata, score })
+            }
+        }
+
+        results.sort((a, b) => b.score - a.score)
+        if (maxResults > 0 && results.length > maxResults) {
+            results.length = maxResults
+        }
+
+        return results
+    }
 }

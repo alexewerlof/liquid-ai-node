@@ -67,37 +67,24 @@ async function main() {
         console.timeEnd(`RAG lookup`)
 
         // Pass augmented prompt to model, but store original in history
-        const currentMessages = [
-            ...session.toMessages(),
-            new UserWMsg(augmentedInput).toJSON(),
-        ]
+        const currentMessages = [...session.toMessages(), new UserWMsg(augmentedInput).toJSON()]
 
         try {
             // Add user message to session directly
             session.addWMsg(new UserWMsg(userInput))
 
-            console.debug(
-                '\n[DEBUG] RAG Augmented Input:\n',
-                augmentedInput,
-                '\n',
-            )
+            console.debug('\n[DEBUG] RAG Augmented Input:\n', augmentedInput, '\n')
 
             process.stdout.write('\nAssistant: ')
 
             const toolbox = new Toolbox()
-            toolbox
-                .addTool('get_time', 'Gets the current local time.')
-                .fn(() => new Date().toLocaleTimeString())
+            toolbox.addTool('get_time', 'Gets the current local time.').fn(() => new Date().toLocaleTimeString())
 
             const agent = new Agent(llm, session, toolbox)
 
-            const response = await agent.complete(
-                currentMessages,
-                inference.generation,
-                (token) => {
-                    process.stdout.write(token)
-                },
-            )
+            const response = await agent.complete(currentMessages, inference.generation, (token) => {
+                process.stdout.write(token)
+            })
 
             // agent.complete() automatically adds the response to the session
             console.log()

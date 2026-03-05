@@ -1,29 +1,54 @@
-import { isDef, isArr } from 'jty';
+import { isDef, isArr } from 'jty'
 
+/**
+ * Extracts the primary message block or text content from an LLM completion result.
+ * Handles both plain strings, OpenAI-style nested message objects, and Transformers.js array structures.
+ *
+ * @param {any|any[]} completion The raw output returned by an LLM generation call.
+ * @returns {any} The extracted message object, generated text string, or the original unchanged input.
+ */
 export function getFirstMessage(completion) {
     if (Array.isArray(completion) && completion.length > 0) {
         if (completion[0].generated_text && Array.isArray(completion[0].generated_text)) {
-            return completion[0].generated_text.at(-1);
+            return completion[0].generated_text.at(-1)
         }
         if (completion[0].message) {
-            return completion[0].message; // OpenAI format just in case
+            return completion[0].message // OpenAI format just in case
         }
     }
-    return completion;
+    return completion
 }
 
+/**
+ * Determines whether a given message object represents a request from the assistant to call one or more tools.
+ *
+ * @param {object} message A message object (usually from an LLM response or session history).
+ * @returns {boolean} True if the message contains valid tool calls, false otherwise.
+ */
 export function isToolsCallMessage(message) {
-    if (!message) return false;
-    return isDef(message.tool_calls) && isArr(message.tool_calls) && message.tool_calls.length > 0;
+    if (!message) return false
+    return isDef(message.tool_calls) && isArr(message.tool_calls) && message.tool_calls.length > 0
 }
 
 function simpleProgressBar(percent) {
-
-    const filled = '█'.repeat(Math.round(percent / 10));
-    const empty = '░'.repeat(10 - filled.length);
-    return `${filled}${empty} ${percent.toFixed(2)}%`;
+    const filled = '█'.repeat(Math.round(percent / 10))
+    const empty = '░'.repeat(10 - filled.length)
+    return `${filled}${empty} ${percent.toFixed(2)}%`
 }
 
+/**
+ * Callback function designed to handle progress events emitted by Transformers.js during model loading.
+ * Logs informative console messages for file downloads and initialization phases.
+ *
+ * @param {object} progressObg An object detailing the current progress of a pipeline initialization step.
+ * @param {string} [progressObg.name] The name of the file being processed.
+ * @param {string} [progressObg.file] The specific file path or URL.
+ * @param {string} progressObg.status The current status ('initiate', 'download', 'progress', 'ready', 'done').
+ * @param {number} [progressObg.progress] The completion percentage if status is 'progress'.
+ * @param {number} [progressObg.total] The total byte size expected.
+ * @param {string} [progressObg.task] The overall pipeline task type (e.g. 'text-generation') when status is 'ready'.
+ * @param {string} [progressObg.model] The model name being loaded when status is 'ready'.
+ */
 export function pipelineProgressReporter(progressObg) {
     // console.log('Progress event', progressObg);
     // A single name like 'Xenova/all-MiniLM-L6-v2' may initiate downloading and loading
@@ -34,7 +59,7 @@ export function pipelineProgressReporter(progressObg) {
 
     switch (status) {
         case 'initiate':
-            /** 
+            /**
              * The library has realized it needs a specific file and has started the process of fetching it.
              * This happens before any data transfer begins.
              * Defined: name, file
@@ -54,7 +79,9 @@ export function pipelineProgressReporter(progressObg) {
              * Fired with progress=100 if the file is already downloaded
              * Defined: name, file, progress, total
              */
-            console.debug(`File Progress:\nName: ${name}, File: ${file}, Progress: ${simpleProgressBar(progress)} Total: ${total}`)
+            console.debug(
+                `File Progress:\nName: ${name}, File: ${file}, Progress: ${simpleProgressBar(progress)} Total: ${total}`,
+            )
             break
         case 'ready':
             /**
@@ -62,7 +89,7 @@ export function pipelineProgressReporter(progressObg) {
              * loaded, parsed, and the model is fully initialized and ready for inference.
              * Defined: task, model
              */
-            console.debug(`Task Ready:\nTask: ${task}, Model ${model}`);
+            console.debug(`Task Ready:\nTask: ${task}, Model ${model}`)
             break
         case 'done':
             /**

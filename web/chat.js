@@ -1,7 +1,7 @@
-import { doc } from "jj"
-import { Session, userMessage } from "../src/Session.js"
-import { inference, systemPrompt } from "../src/config.js"
-import { TransformerLLM } from "../src/TransformersLLM.js"
+import { doc } from 'jj'
+import { Session, userMessage } from '../src/Session.js'
+import { inference, systemPrompt } from '../src/config.js'
+import { TransformerLLM } from '../src/TransformersLLM.js'
 
 const initChatButton = doc.find('#init-chat', true)
 const chatSection = doc.find('#chat-section', true)
@@ -29,9 +29,14 @@ submitButton.on('click', async () => {
         const prompt = promptInput.getValue()
         session.addMessage(userMessage(prompt))
         controller = new AbortController()
-        const full = await llm.complete(session.messages, inference.generation, (text) => {
-            console.log(text)
-        }, controller.signal)
+        const full = await llm.complete(
+            session.messages,
+            inference.generation,
+            (text) => {
+                console.log(text)
+            },
+            controller.signal,
+        )
         console.log(full)
     } catch (e) {
         console.error(e)

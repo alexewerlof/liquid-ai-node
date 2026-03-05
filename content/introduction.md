@@ -3,6 +3,7 @@
 Site Reliability Engineering (SRE) is a discipline that incorporates aspects of software engineering and applies them to infrastructure and operations problems. The main goals are to create scalable and highly reliable software systems.
 
 ## Core Principles
+
 1. **Embracing Risk**: Reliability is not about 100% uptime; it's about finding the right balance between velocity and stability.
 2. **Service Level Objectives (SLOs)**: Defining the level of reliability required for a service and measuring it.
 3. **Eliminating Toil**: Toil is manual, repetitive work that provides no long-term value. SREs aim to automate these tasks.
@@ -12,4 +13,5 @@ Site Reliability Engineering (SRE) is a discipline that incorporates aspects of 
 7. **Simplicity**: Reducing complexity in the system to improve reliability and maintainability.
 
 ## The Role of an SRE
+
 An SRE spends up to 50% of their time on "ops" (tickets, on-call, manual work) and the other 50% on "dev" (automation, feature development, improving the system). This balance ensures that the operational load doesn't overwhelm the engineering efforts.

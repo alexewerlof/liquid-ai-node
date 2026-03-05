@@ -1,0 +1,7 @@
+# Ignore dependency directories
+node_modules
+dependencies
+
+# Ignore build output and generated documentation
+lib
+docs

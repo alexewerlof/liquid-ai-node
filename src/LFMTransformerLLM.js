@@ -1,13 +1,24 @@
 import { isStr } from 'jty'
 import { TransformerLLM } from './TransformersLLM.js'
 
+/**
+ * Removes tool call start and end tokens from a text string.
+ * This handles cases where models leak these special tokens into the final generated text.
+ *
+ * @param {string} text The generated text from the LLM.
+ * @returns {string} The text with tool call tokens removed, or the original input if not a string.
+ */
 export function stripToolCallTokens(text) {
     if (!isStr(text)) return text
-    return text
-        .replaceAll('<|tool_call_start|>', '')
-        .replaceAll('<|tool_call_end|>', '')
+    return text.replaceAll('<|tool_call_start|>', '').replaceAll('<|tool_call_end|>', '')
 }
 
+/**
+ * Parses Python-style tool call strings (e.g., `[function_name(arg1="value1")]`) into OpenAI-compatible tool call objects.
+ *
+ * @param {string} text The raw generated text that might contain a tool call.
+ * @returns {object[]|null} An array containing a single tool call object if parsing succeeds, or null if it's not a valid tool call.
+ */
 export function parsePythonToolCall(text) {
     if (!text) return null
     text = text.trim()
@@ -48,6 +59,13 @@ export function parsePythonToolCall(text) {
     ]
 }
 
+/**
+ * Formats OpenAI-style tool definitions for compatibility with LFM2 models.
+ * Extracts the inner `function` object from the tool wrapper.
+ *
+ * @param {object[]} tools An array of OpenAI-compatible tool objects.
+ * @returns {object[]|undefined} An array of unwrapped function objects, or undefined if the input is empty or invalid.
+ */
 export function formatToolsForLFM2(tools) {
     if (!tools || !Array.isArray(tools)) return
     return tools.map((t) => {
@@ -58,14 +76,17 @@ export function formatToolsForLFM2(tools) {
     })
 }
 
+/**
+ * Formats OpenAI messages for compatibility with LFM2 models.
+ * Specifically converts assistant tool_calls into Python-style function call strings.
+ *
+ * @param {object[]} messages An array of OpenAI message objects.
+ * @returns {object[]} The formatted messages suitable for the LFM2 chat template.
+ */
 export function formatMessagesForLFM2(messages) {
     if (!messages || !Array.isArray(messages)) return messages
     return messages.map((msg) => {
-        if (
-            msg.role === 'assistant' &&
-            msg.tool_calls &&
-            msg.tool_calls.length > 0
-        ) {
+        if (msg.role === 'assistant' && msg.tool_calls && msg.tool_calls.length > 0) {
             const calls = msg.tool_calls
                 .filter((t) => t.type === 'function')
                 .map((t) => {
@@ -91,12 +112,20 @@ export function formatMessagesForLFM2(messages) {
     })
 }
 
+/**
+ * A specialized TransformerLLM implementation tailored for LFM2 models.
+ * Handles LFM2's specific tool calling format (Python-style nested in brackets).
+ */
 export class LFMTransformerLLM extends TransformerLLM {
     /**
-     * @param {object[]} messages An array of OpenAI message objects
-     * @param {{ tools?: object[]; }} options
-     * @param {(token: string) => void} [onToken] Optional function that takes the token string when it's generated
-     * @param {AbortSignal} [signal] An AbortSignal instance to cancel the request
+     * Completes a chat sequence using the LFM2 model.
+     * Overrides the base complete method to handle LFM2-specific chat templates and parse tool calls from the output.
+     *
+     * @param {object[]} messages An array of OpenAI message objects.
+     * @param {{ tools?: object[]; [key: string]: any }} options Generation options, optionally including tools.
+     * @param {(token: string) => void} [onToken] Optional callback fired when a new token is generated.
+     * @param {AbortSignal} [signal] An optional AbortSignal to cancel the generation request.
+     * @returns {Promise<any>} The generation result, including parsed tool calls if applicable.
      */
     async complete(messages, options, onToken, signal) {
         let inputStrOrMessages = formatMessagesForLFM2(messages)
@@ -104,23 +133,15 @@ export class LFMTransformerLLM extends TransformerLLM {
 
         if (options.tools && this.pipeline) {
             pipelineOptions.tools = formatToolsForLFM2(options.tools)
-            inputStrOrMessages = this.pipeline.tokenizer.apply_chat_template(
-                inputStrOrMessages,
-                {
-                    tools: pipelineOptions.tools,
-                    add_generation_prompt: true,
-                    tokenize: false,
-                },
-            )
+            inputStrOrMessages = this.pipeline.tokenizer.apply_chat_template(inputStrOrMessages, {
+                tools: pipelineOptions.tools,
+                add_generation_prompt: true,
+                tokenize: false,
+            })
             delete pipelineOptions.tools
         }
 
-        const result = await super.complete(
-            inputStrOrMessages,
-            pipelineOptions,
-            onToken,
-            signal,
-        )
+        const result = await super.complete(inputStrOrMessages, pipelineOptions, onToken, signal)
 
         if (Array.isArray(result) && isStr(result[0]?.generated_text)) {
             /** @type {string} rawText */

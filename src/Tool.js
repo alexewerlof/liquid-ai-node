@@ -40,6 +40,15 @@ import { isFn, isStr } from 'jty'
  * @property {boolean} required - Whether this parameter is required.
  */
 
+/**
+ * Parses a shorthand string description of a parameter into a typed property object.
+ * Shorthand format: "name : type[*]"
+ * Examples: "id : string*", "tags : string[]", "count : number"
+ *
+ * @param {string} paramShorthand The shorthand string to parse.
+ * @returns {{name: string, type: string, required: boolean, itemsType?: string}} The parsed property object.
+ * @throws {TypeError|SyntaxError} If the input string is structurally invalid or unparseable.
+ */
 export function parseParamShorthand(paramShorthand) {
     if (!isStr(paramShorthand)) {
         throw new TypeError(`Expected paramShorthand to be a string. Got ${paramShorthand}`)
@@ -74,6 +83,10 @@ export function parseParamShorthand(paramShorthand) {
     return { name, type, required }
 }
 
+/**
+ * A builder class for defining tools that can be executed by LLMs.
+ * Fluently define the tool name, description, parameters, and the function mapping.
+ */
 export class Tool {
     /** The value of this inside the function when it is invoked */
     thisArg = undefined
@@ -110,6 +123,13 @@ export class Tool {
      */
     strict = false
 
+    /**
+     * Initializes a new Tool instance with a name and a description.
+     *
+     * @param {string} name The unique identifier for the tool.
+     * @param {...string} description One or more strings describing what the tool does (they will be concatenated).
+     * @throws {TypeError} If the tool name is not a string.
+     */
     constructor(name, ...description) {
         if (!isStr(name)) {
             throw new TypeError(`Expected tool name to be a string. Got ${name}`)
@@ -119,6 +139,13 @@ export class Tool {
         this.description = description.join(' ')
     }
 
+    /**
+     * Attaches the JavaScript function to be executed when the tool is invoked.
+     *
+     * @param {Function} func The target function to call. It usually accepts an object argument.
+     * @returns {this} The tool instance for chaining.
+     * @throws {TypeError} If `func` is not a function.
+     */
     fn(func) {
         if (!isFn(func)) {
             throw new TypeError(`Expected tool func to be a function. Got ${func}`)
@@ -127,16 +154,34 @@ export class Tool {
         return this
     }
 
+    /**
+     * Sets the `this` context to be used when the tool's function is invoked.
+     *
+     * @param {*} thisArg The object to use as the `this` context.
+     * @returns {this} The tool instance for chaining.
+     */
     this(thisArg) {
         this.thisArg = thisArg
         return this
     }
 
+    /**
+     * Indicates whether the underlying function accepts parameters not explicitly defined.
+     *
+     * @param {boolean} value True to allow additional properties, false otherwise.
+     * @returns {this} The tool instance for chaining.
+     */
     hasAdditionalProperties(value) {
         this.additionalProperties = Boolean(value)
         return this
     }
 
+    /**
+     * Sets whether strict mode tracking should be enabled. Often used for JSON schema validation enforcements by LLMs.
+     *
+     * @param {boolean} value True to enforce strict mode, false otherwise.
+     * @returns {this} The tool instance for chaining.
+     */
     strictMode(value) {
         this.strict = Boolean(value)
         return this
@@ -169,6 +214,13 @@ export class Tool {
         }
     }
 
+    /**
+     * Reusable builder step to define a tool argument/parameter via the shorthand format.
+     *
+     * @param {string} paramShorthand Shorthand describing the param formatting (e.g., "id: string*").
+     * @param {string} description An explanation of the parameter's intent.
+     * @returns {this} The tool instance for chaining.
+     */
     prm(paramShorthand, description) {
         const parsedParam = parseParamShorthand(paramShorthand)
         this.properties.push({ ...parsedParam, description })

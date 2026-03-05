@@ -8,8 +8,8 @@
  * so environment setup runs exactly once.
  */
 
-import { pipeline, env } from "@huggingface/transformers";
-import { pipelineProgressReporter } from "./util.js";
+import { pipeline, env } from '@huggingface/transformers'
+import { pipelineProgressReporter } from './util.js'
 
 /*
  * Tips for future development:
@@ -18,7 +18,7 @@ import { pipelineProgressReporter } from "./util.js";
  *
  * Set location of .wasm files. Defaults to use a CDN.
  * env.backends.onnx.wasm.wasmPaths = '/path/to/files/';
- * 
+ *
  * By default, unless you pass { local_files_only: true }, transformers.js will send a tiny,
  * lightweight HEAD request to the Hugging Face Hub to check the ETag of the file.
  * If the cache is still up to date, it instantly falls back to reading from the local cache,
@@ -27,15 +27,15 @@ import { pipelineProgressReporter } from "./util.js";
  * env.localModelPath = "/huggingface";
  */
 
-export const isNode = typeof process !== "undefined" && !!process.versions?.node;
+export const isNode = typeof process !== 'undefined' && !!process.versions?.node
 
 if (isNode) {
-  // Dynamic import prevents bundlers from resolving onnxruntime-node in browser builds.
-  // Using a variable defeats static analysis for bundlers like esbuild.
-  const ortPackage = "onnxruntime-node";
-  const ort = await import(ortPackage);
-  env.backends.onnx.runtime = ort.default ?? ort;
-  env.cacheDir = "./.cache";
+    // Dynamic import prevents bundlers from resolving onnxruntime-node in browser builds.
+    // Using a variable defeats static analysis for bundlers like esbuild.
+    const ortPackage = 'onnxruntime-node'
+    const ort = await import(ortPackage)
+    env.backends.onnx.runtime = ort.default ?? ort
+    env.cacheDir = './.cache'
 }
 
 /**
@@ -44,20 +44,20 @@ if (isNode) {
  * @returns {Promise<string>} "webgpu" or "cpu"
  */
 export async function getDevice() {
-  try {
-    const adapter = await navigator?.gpu?.requestAdapter();
-    return adapter ? "webgpu" : "cpu";
-  } catch (e) {
-    return "cpu";
-  }
+    try {
+        const adapter = await navigator?.gpu?.requestAdapter()
+        return adapter ? 'webgpu' : 'cpu'
+    } catch (e) {
+        return 'cpu'
+    }
 }
 
 export async function createPipeline(task, model, options = {}) {
-  const device = await getDevice();
-  console.debug(`Creating pipeline for task ${task} and model ${model} on device ${device}`);
-  return await pipeline(task, model, {
-    device,
-    progress_callback: pipelineProgressReporter,
-    ...options
-  });
+    const device = await getDevice()
+    console.debug(`Creating pipeline for task ${task} and model ${model} on device ${device}`)
+    return await pipeline(task, model, {
+        device,
+        progress_callback: pipelineProgressReporter,
+        ...options,
+    })
 }

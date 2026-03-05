@@ -8,18 +8,18 @@ This repo is a feasibility test for running Liquid AI models via `@huggingface/t
 
 ### Key Files
 
-| File | Purpose | Portable? |
-|---|---|---|
-| `index.js` | Entry point — initializes model and starts interactive chat | Node-only |
-| `discover-content.js` | Scans `./content` for `.md` files → writes `content.json` | Node-only |
-| `content.json` | Generated manifest of content files (used at runtime by both environments) | Generated |
-| `src/config.js` | Model IDs, generation params, and system prompt | ✅ |
-| `src/runtime.js` | Environment-aware ONNX runtime setup + `getDevice()` | ✅ |
-| `src/Embedder.js` | Embedding model wrapper | ✅ |
-| `src/VectorStore.js` | In-memory vector store for similarity search | ✅ |
-| `src/rag.js` | Portable RAG class: chunking, embedding, context retrieval | ✅ |
-| `src/ingest.js` | Loads content files from filesystem into RAG | Node-only |
-| `src/chat.js` | Interactive chat loop with RAG integration | Node-only |
+| File                  | Purpose                                                                    | Portable? |
+| --------------------- | -------------------------------------------------------------------------- | --------- |
+| `index.js`            | Entry point — initializes model and starts interactive chat                | Node-only |
+| `discover-content.js` | Scans `./content` for `.md` files → writes `content.json`                  | Node-only |
+| `content.json`        | Generated manifest of content files (used at runtime by both environments) | Generated |
+| `src/config.js`       | Model IDs, generation params, and system prompt                            | ✅        |
+| `src/runtime.js`      | Environment-aware ONNX runtime setup + `getDevice()`                       | ✅        |
+| `src/Embedder.js`     | Embedding model wrapper                                                    | ✅        |
+| `src/VectorStore.js`  | In-memory vector store for similarity search                               | ✅        |
+| `src/rag.js`          | Portable RAG class: chunking, embedding, context retrieval                 | ✅        |
+| `src/ingest.js`       | Loads content files from filesystem into RAG                               | Node-only |
+| `src/chat.js`         | Interactive chat loop with RAG integration                                 | Node-only |
 
 ---
 
@@ -28,8 +28,8 @@ This repo is a feasibility test for running Liquid AI models via `@huggingface/t
 - **Ask before acting.** Always clarify why you need permission to execute a command. Do not assume intent.
 - **Stay in scope.** Only modify code related to the current task. Do not refactor unrelated files unless asked.
 - **Keep `AGENTS.md` up to date.** Whenever you add, remove, or change code (files, exports, dependencies, behavior), update this document to reflect the change. This serves two purposes:
-  1. It gives the user a human-readable summary of what changed and why.
-  2. It enables knowledge handover — another agent or a future session can read this file and immediately understand the current state of the project.
+    1. It gives the user a human-readable summary of what changed and why.
+    2. It enables knowledge handover — another agent or a future session can read this file and immediately understand the current state of the project.
 
 ---
 
@@ -69,19 +69,20 @@ These conventions apply to **all** JavaScript code generated or modified in this
 - If the type validation fails, emit the right error type: `TypeError` for wrong type, `RangeError` for wrong value, `ReferenceError` for missing value, `SyntaxError` for invalid syntax, `URIError` for invalid URI, `EvalError` for invalid eval and if no other error class fits, emit `Error`.
 - The error message should be clear (what went wrong? what did we expect?) and actionable. A good error message is `Expected <type> for <variable>, but got <value> (${typeof value})`.
 - Use the [`jty`](https://www.npmjs.com/package/jty) library for type validation. The most commonly used functions are:
-  - `isStr()`
-  - `isNum()`
-  - `isArr()` (similar to `Array.isArray()` but prefered)
-  - `isA()` (similar to the `instanceof` operator but prefered)
+    - `isStr()`
+    - `isNum()`
+    - `isArr()` (similar to `Array.isArray()` but prefered)
+    - `isA()` (similar to the `instanceof` operator but prefered)
 - The typical usage of this library looks like:
+
 ```javascript
-import { isStr } from "jty";
+import { isStr } from 'jty'
 
 function myFunction(arg) {
-  if (!isStr(arg)) {
-    throw new TypeError(`Expected string for arg, but got ${arg} (${typeof arg})`);
-  }
-  // ... rest of the logic that relies on arg being a string
+    if (!isStr(arg)) {
+        throw new TypeError(`Expected string for arg, but got ${arg} (${typeof arg})`)
+    }
+    // ... rest of the logic that relies on arg being a string
 }
 ```
 
@@ -94,8 +95,8 @@ function myFunction(arg) {
 
 - Default to plain functions and module-level exports.
 - Only use a `class` when:
-  1. The logic is inherently stateful, **and**
-  2. Passing that state between multiple related functions would make the code unnecessarily complex.
+    1. The logic is inherently stateful, **and**
+    2. Passing that state between multiple related functions would make the code unnecessarily complex.
 
 ### Modern JavaScript Features
 
@@ -129,8 +130,8 @@ Use the latest stable features available in current Node.js (v22+) and modern br
 - **Library.** Use only `@huggingface/transformers` (Transformers.js v3+) for ONNX inference.
 - **Runtime detection.** `src/runtime.js` detects the environment and conditionally loads `onnxruntime-node` via dynamic import (Node) or uses WebGPU/WASM (browser). Import `getDevice()` to detect the best available compute device.
 - **Hardware acceleration:**
-  - Node.js → `onnxruntime-node` (CPU)
-  - Browser → WebGPU (primary), WASM (fallback)
+    - Node.js → `onnxruntime-node` (CPU)
+    - Browser → WebGPU (primary), WASM (fallback)
 - **Cache.** Transformers.js handles caching per environment: `env.cacheDir = './.cache'` on Node, native Cache API on browser.
 - **Content discovery.** Run `npm run discover` to generate `content.json` from `./content/**/*.md`. Both environments read this manifest at runtime.
 
@@ -168,4 +169,5 @@ Use the latest stable features available in current Node.js (v22+) and modern br
 - [ONNX Runtime Web/Node](https://onnxruntime.ai/docs/api/js/index.html)
 
 ## Pure Function Encapsulation
+
 It is totally fine to encapsulate logic into pure functions and put them outside a class. If these functions are only used within that specific class, they should be kept in the same file as the class.

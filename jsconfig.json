@@ -1,12 +1,10 @@
 {
-  "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "target": "ES2022",
-    "checkJs": true,
-    "allowJs": true
-  },
-  "exclude": [
-    "node_modules"
-  ]
+    "compilerOptions": {
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "target": "ES2022",
+        "checkJs": true,
+        "allowJs": true
+    },
+    "exclude": ["node_modules"]
 }

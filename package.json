@@ -1,39 +1,40 @@
 {
-  "$schema": "https://json.schemastore.org/package",
-  "name": "liquid-ai-node",
-  "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "discover": "node discover-content.js",
-    "start": "node index.js",
-    "vendeps": "vendeps",
-    "test": "node --test"
-  },
-  "dependencies": {
-    "@huggingface/transformers": "^3.8.1",
-    "idb": "^8.0.3",
-    "jj": "^2.7.2",
-    "jty": "^4.0.0",
-    "onnxruntime-node": "1.24.2"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@eslint/json": "^1.0.1",
-    "@eslint/markdown": "^7.5.1",
-    "eslint": "^10.0.2",
-    "eslint-plugin-markdown": "^5.1.0",
-    "globals": "^17.4.0",
-    "prettier": "^3.8.1",
-    "vendeps": "^1.0.2"
-  },
-  "vendeps": {
-    "onnxruntime-node": false
-  },
-  "overrides": {
-    "onnxruntime-node": "$onnxruntime-node"
-  }
+    "$schema": "https://json.schemastore.org/package",
+    "name": "liquid-ai-node",
+    "version": "1.0.0",
+    "description": "",
+    "license": "ISC",
+    "author": "",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "fmt": "prettier --write .",
+        "discover": "node discover-content.js",
+        "start": "node index.js",
+        "vendeps": "vendeps",
+        "test": "node --test"
+    },
+    "dependencies": {
+        "@huggingface/transformers": "^3.8.1",
+        "idb": "^8.0.3",
+        "jj": "^2.7.2",
+        "jty": "^4.0.0",
+        "onnxruntime-node": "1.24.2"
+    },
+    "devDependencies": {
+        "@eslint/js": "^10.0.1",
+        "@eslint/json": "^1.0.1",
+        "@eslint/markdown": "^7.5.1",
+        "eslint": "^10.0.2",
+        "eslint-plugin-markdown": "^5.1.0",
+        "globals": "^17.4.0",
+        "prettier": "^3.8.1",
+        "vendeps": "^1.0.2"
+    },
+    "vendeps": {
+        "onnxruntime-node": false
+    },
+    "overrides": {
+        "onnxruntime-node": "$onnxruntime-node"
+    }
 }
