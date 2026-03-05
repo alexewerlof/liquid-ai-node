@@ -34,17 +34,17 @@ async function main() {
 
     console.log('Loading model...')
     console.time(`Init model ${inference.modelId}`)
-    const llm = new LFMTransformerLLM()
-    await llm.init(inference.modelId, {
+    const llm = new LFMTransformerLLM(inference.modelId, {
         ...inference.options,
         token: huggingFaceToken,
     })
+    await llm.load()
     console.timeEnd(`Init model ${inference.modelId}`)
 
     // Initialize RAG system
     console.log('Initializing RAG...')
-    const embedder = new Embedder()
-    await embedder.init(embedding.modelId, embedding.options)
+    const embedder = new Embedder(embedding.modelId, embedding.options)
+    await embedder.load()
 
     const vectorStore = new VectorStore()
     const rag = new RAG(embedder, vectorStore)
@@ -82,7 +82,7 @@ async function main() {
 
             const agent = new Agent(llm, session, toolbox)
 
-            const response = await agent.complete(currentMessages, inference.generation, (token) => {
+            await agent.complete(currentMessages, inference.generation, (token) => {
                 process.stdout.write(token)
             })
 

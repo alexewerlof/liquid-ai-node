@@ -5,6 +5,10 @@ import { VectorStore } from './VectorStore.js'
 import { Embedder } from './Embedder.js'
 
 class MockEmbedder extends Embedder {
+    async load() {
+        return this
+    }
+
     async embed(text) {
         if (text.includes('apple')) return [1, 0, 0]
         if (text.includes('banana')) return [0, 1, 0]
@@ -21,7 +25,8 @@ describe('RAG', () => {
 
     test('addDocument adds chunks to VectorStore', async () => {
         const store = new VectorStore()
-        const embedder = new MockEmbedder()
+        const embedder = new MockEmbedder('mock-model')
+        await embedder.load()
         const rag = new RAG(embedder, store)
 
         const chunkCount = await rag.addDocument('I love eating an apple piecewise.\n\nSome banana text.', {
@@ -32,7 +37,7 @@ describe('RAG', () => {
 
     test('getRelevantContext retrieves highly scored context', async () => {
         const store = new VectorStore()
-        const embedder = new MockEmbedder()
+        const embedder = new MockEmbedder('mock-model')
         const rag = new RAG(embedder, store)
 
         await rag.addDocument('I love eating an apple piecewise.\n\nSome banana text.')
@@ -44,7 +49,7 @@ describe('RAG', () => {
 
     test('augmentQuery returns prompt with embedded context', async () => {
         const store = new VectorStore()
-        const embedder = new MockEmbedder()
+        const embedder = new MockEmbedder('mock-model')
         const rag = new RAG(embedder, store)
         await rag.addDocument('The secret of life is 42.')
 

@@ -47,7 +47,7 @@ export async function getDevice() {
     try {
         const adapter = await navigator?.gpu?.requestAdapter()
         return adapter ? 'webgpu' : 'cpu'
-    } catch (e) {
+    } catch {
         return 'cpu'
     }
 }

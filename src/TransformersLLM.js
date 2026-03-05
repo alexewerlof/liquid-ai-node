@@ -46,7 +46,17 @@ export class TransformerLLM {
     #ttlTimer = null
     #ttl = 0
     #modelName = null
-    #options = null
+    #pipelineOptions = null
+
+    /**
+     * Creates a new TransformerLLM instance.
+     * @param {string} modelName The Hugging Face model ID to load.
+     * @param {object} [pipelineOptions={}] Optional pipeline configuration (e.g. `dtype`).
+     */
+    constructor(modelName, pipelineOptions = {}) {
+        this.#modelName = modelName
+        this.#pipelineOptions = pipelineOptions
+    }
 
     /**
      * Gets the current, initialized text-generation pipeline.
@@ -90,16 +100,13 @@ export class TransformerLLM {
     }
 
     /**
-     * Initializes the text-generation pipeline. Must be called before `complete()`.
+     * Loads the text-generation pipeline into memory.
      *
-     * @param {string} model_name The Hugging Face model ID to load.
-     * @param {object} [options] Optional pipeline configuration (e.g. `dtype`).
      * @returns {Promise<TransformerLLM>} Returns `this` instance for chaining.
      */
-    async init(model_name, options) {
-        this.#modelName = model_name
-        this.#options = options
-        this.#pipeline = await createPipeline('text-generation', model_name, options)
+    async load() {
+        if (this.#pipeline) return this
+        this.#pipeline = await createPipeline('text-generation', this.#modelName, this.#pipelineOptions)
         return this
     }
 
@@ -140,7 +147,7 @@ export class TransformerLLM {
      * @param {AbortSignal} [signal] Optional signal to cancel the text generation early.
      * @returns {Promise<any>} The response block produced by the pipeline (format varies based on the underlying model and tokenizer setup).
      * @throws {TypeError} If `messages` or `signal` are of invalid types.
-     * @throws {Error} If `init()` has not been called prior.
+     * @throws {Error} If `load()` has not been called prior and a cold start fails.
      */
     async complete(messages, options, onToken, signal) {
         if (!isArr(messages) && !isStr(messages)) {
@@ -148,14 +155,14 @@ export class TransformerLLM {
         }
 
         if (!this.#modelName) {
-            throw new Error('Model configuration missing. Call init() first.')
+            throw new Error('Model configuration missing. Pass modelName to constructor first.')
         }
 
         this.#clearTimer()
 
         // On-demand load (Cold Start)
         if (!this.#pipeline) {
-            await this.init(this.#modelName, this.#options)
+            await this.load()
         }
 
         const onTokenIsFn = isFn(onToken)

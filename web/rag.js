@@ -21,12 +21,11 @@ initRagButton.on('click', async () => {
     try {
         console.time('RAG initialization')
         const vectorStore = new VectorStore()
-        const embedder = new Embedder()
         const progressBars = {}
         const ragProgress = doc.find('#rag-progress')
-        await embedder.init('Xenova/all-MiniLM-L6-v2', {
+        const embedder = new Embedder('Xenova/all-MiniLM-L6-v2', {
             progress_callback(progressObg) {
-                const { name, file, status, progress, total, task, model } = progressObg
+                const { name, status, progress } = progressObg
                 function getProgressBar(name) {
                     if (!progressBars[name]) {
                         progressBars[name] = JJHE.create('progress')
@@ -55,6 +54,7 @@ initRagButton.on('click', async () => {
                 }
             },
         })
+        await embedder.load()
         rag = new RAG(embedder, vectorStore)
         console.timeEnd('RAG initialization')
 

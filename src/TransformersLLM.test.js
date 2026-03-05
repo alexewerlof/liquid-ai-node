@@ -1,10 +1,9 @@
 import { test } from 'node:test'
 import * as assert from 'node:assert/strict'
 import { TransformerLLM } from './TransformersLLM.js'
-import { env } from '@huggingface/transformers'
 
 test('TTL configuration clamping', () => {
-    const llm = new TransformerLLM()
+    const llm = new TransformerLLM('mock-model')
     llm.setTTL(0)
     assert.equal(llm.ttl, 0)
 
@@ -22,29 +21,21 @@ test('TTL configuration clamping', () => {
     assert.equal(llm.ttl, max_ttl_sec * 1000)
 
     // Test errors
+    // @ts-ignore
     assert.throws(() => llm.setTTL('a'), TypeError)
 })
 
 test('Unload and cold start logic works', async () => {
-    const llm = new TransformerLLM()
+    const llm = new TransformerLLM('Xenova/tiny-random-LlamaForCausalLM')
     llm.setTTL(10) // Will clamp to 30000ms. Just setting it to test timers don't crash.
 
     // We can't easily test the actual model loading without a network request that might fail or be slow.
-    // Let's mock the createPipeline function behavior by overriding the init method slightly for the test.
-    let initCalled = false
-    let originalInit = llm.init.bind(llm)
+    // Let's mock the load function behavior.
+    let loadCalled = false
 
-    // Mock pipeline
-    const mockPipeline = {
-        dispose: async () => {},
-        tokenizer: { apply_chat_template: () => {} },
-    }
-
-    llm.init = async function (modelName, options) {
-        initCalled = true
-        // set private fields via reflection or just trust the public API for the mock
-        // Since we can't easily set private fields #pipeline from outside, we'll actually let it fail on complete if we don't mock the whole class.
-        // Let's test the public unload method instead when we manually set pipeline.
+    llm.load = async function () {
+        loadCalled = true
+        return this
     }
 
     // Test the public unload method logic
@@ -53,5 +44,5 @@ test('Unload and cold start logic works', async () => {
 
     // Since #pipeline is private, a full integration test requires either loading a real model or mocking the `runtime.js` module.
     // For now we test logic that doesn't strictly depend on the internals.
-    assert.equal(initCalled, false)
+    assert.equal(loadCalled, false)
 })

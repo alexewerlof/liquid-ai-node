@@ -1,5 +1,5 @@
 import { openDB } from '../dependencies/idb.js'
-import { env, pipeline } from '../dependencies/@huggingface/transformers.js'
+import { pipeline } from '../dependencies/@huggingface/transformers.js'
 import { getDevice } from '../src/runtime.js'
 import { cosineSimilarity } from '../src/VectorStore.js'
 import { pipelineProgressReporter } from '../src/util.js'
@@ -125,7 +125,7 @@ export class RAGEngine {
             const key = await store.add(record)
             return key
         } catch (error) {
-            throw new Error(`Error inserting data: ${error}`)
+            throw new Error(`Error inserting data: ${error}`, { cause: error })
         }
     }
 
@@ -164,7 +164,7 @@ export class RAGEngine {
             similarities.sort((a, b) => b.similarity - a.similarity) // Sort by similarity (descending)
             return similarities.slice(0, limit) // Return the top N results based on limit
         } catch (error) {
-            throw new Error(`Error querying vectors: ${error}`)
+            throw new Error(`Error querying vectors: ${error}`, { cause: error })
         }
     }
 }

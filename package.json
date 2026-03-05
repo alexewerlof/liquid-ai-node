@@ -9,10 +9,11 @@
     "main": "index.js",
     "scripts": {
         "fmt": "prettier --write .",
+        "lint": "eslint",
+        "test": "node --test",
         "discover": "node discover-content.js",
         "start": "node index.js",
-        "vendeps": "vendeps",
-        "test": "node --test"
+        "vendeps": "vendeps"
     },
     "dependencies": {
         "@huggingface/transformers": "^3.8.1",

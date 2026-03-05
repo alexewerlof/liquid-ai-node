@@ -1,9 +1,10 @@
 import { doc } from 'jj'
 import { Session, userMessage } from '../src/Session.js'
-import { inference, systemPrompt } from '../src/config.js'
+import { inference } from '../src/config.js'
 import { TransformerLLM } from '../src/TransformersLLM.js'
 
 const initChatButton = doc.find('#init-chat', true)
+// @type jj.JJHE
 const chatSection = doc.find('#chat-section', true)
 const promptInput = doc.find('#prompt', true)
 const submitButton = doc.find('#submit-prompt', true)
@@ -15,8 +16,8 @@ let llm = null
 
 initChatButton.on('click', async () => {
     try {
-        llm = new TransformerLLM(systemPrompt)
-        await llm.init(inference.modelId, inference.options)
+        llm = new TransformerLLM(inference.modelId, inference.options)
+        await llm.load()
         chatSection.show()
         initChatButton.hide()
     } catch (e) {

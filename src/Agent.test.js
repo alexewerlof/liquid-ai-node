@@ -12,7 +12,7 @@ class MockLLM extends TransformerLLM {
         this.callCount = 0
     }
 
-    async complete(messages, options, onToken, signal) {
+    async complete() {
         if (this.callCount >= this.responses.length) {
             return [{ message: { role: 'assistant', content: 'Out of responses mock' } }]
         }

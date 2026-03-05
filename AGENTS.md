@@ -35,6 +35,8 @@ This repo is a feasibility test for running Liquid AI models via `@huggingface/t
 
 ## Test
 
+- This project includes Prettier, ESLint, and tests, all available via npm scripts: `npm run fmt`, `npm run lint`, and `npm run test`.
+- Linting is scoped to first-party project files; generated cache artifacts and vendored dependencies are excluded.
 - Use the native Node.js test framework.
 - Name the test files after the file they're testing (eg. the test for `x.js` is called `x.test.js` in the same directory)
 - Use `describe('FUNCTION_NAME()')` to group all tests for a given function or class.

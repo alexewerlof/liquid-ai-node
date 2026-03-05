@@ -137,9 +137,10 @@ export class Agent {
                 if (!signal) this.#abortController = undefined
 
                 const message = getFirstMessage(completion)
-                const tokenStats = { duration: Date.now() - start } // simplified
+                const duration = Date.now() - start
 
                 console.debug('\n[DEBUG] LLM raw message output:', JSON.stringify(message, null, 2))
+                console.debug('[DEBUG] Completion duration (ms):', duration)
 
                 lastMessageWasToolsCall = this.toolbox && isToolsCallMessage(message)
                 console.debug('[DEBUG] isToolsCallMessage:', !!lastMessageWasToolsCall)
