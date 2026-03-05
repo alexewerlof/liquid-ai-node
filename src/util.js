@@ -1,4 +1,4 @@
-import { isDef, isArr } from 'jty'
+import { isDef, isArr, isNum } from 'jty'
 
 /**
  * Extracts the primary message block or text content from an LLM completion result.
@@ -101,4 +101,41 @@ export function pipelineProgressReporter(progressObg) {
         default:
             console.log(`Unknown status: ${status} in ${JSON.stringify(progressObg)}`)
     }
+}
+
+/**
+ * Clamps a number between a minimum and maximum value.
+ *
+ * @param {number} val The value to clamp.
+ * @param {number} min The minimum allowed value.
+ * @param {number} max The maximum allowed value.
+ * @returns {number} The clamped value.
+ */
+export function clamp(val, min, max) {
+    if (!isNum(val)) {
+        throw new TypeError('val must be a number')
+    }
+    if (!isNum(min)) {
+        throw new TypeError('min must be a number')
+    }
+    if (!isNum(max)) {
+        throw new TypeError('max must be a number')
+    }
+    if (min > max) {
+        throw new TypeError('min must be less than or equal to max')
+    }
+    return Math.min(Math.max(val, min), max)
+}
+
+/**
+ * Converts seconds to milliseconds.
+ *
+ * @param {number} seconds The time in seconds.
+ * @returns {number} The time in milliseconds.
+ */
+export function sec2ms(seconds) {
+    if (!isNum(seconds)) {
+        throw new TypeError('seconds must be a number')
+    }
+    return seconds * 1000
 }

@@ -1,5 +1,6 @@
-import { isA, isArr, isDef, isFn, isStr } from 'jty'
+import { isA, isArr, isDef, isFn, isStr, isNum } from 'jty'
 import { createPipeline } from './runtime.js'
+import { clamp, sec2ms } from './util.js'
 import { TextStreamer, StoppingCriteria, StoppingCriteriaList } from '@huggingface/transformers'
 
 /**
@@ -42,6 +43,10 @@ class SignalStoppingCriteria extends StoppingCriteria {
  */
 export class TransformerLLM {
     #pipeline = null
+    #ttlTimer = null
+    #ttl = 0
+    #modelName = null
+    #options = null
 
     /**
      * Gets the current, initialized text-generation pipeline.
@@ -52,6 +57,39 @@ export class TransformerLLM {
     }
 
     /**
+     * Gets the current configured TTL in milliseconds.
+     * @returns {number} The active TTL in milliseconds.
+     */
+    get ttl() {
+        return this.#ttl
+    }
+
+    /**
+     * Sets the Time-To-Live (TTL) for the loaded model in memory.
+     * The model will automatically be unloaded from memory after this period of inactivity.
+     * 0 disables auto-unloading.
+     *
+     * @param {number} seconds The TTL in seconds. Will be clamped between 30 and 604800 (7 days).
+     * @throws {TypeError} If seconds is not a number.
+     */
+    setTTL(seconds) {
+        if (!isNum(seconds)) {
+            throw new TypeError('seconds must be a number')
+        }
+        if (seconds === 0) {
+            this.#ttl = 0
+            this.#clearTimer()
+            return
+        }
+
+        const MIN_TTL = 30
+        const MAX_TTL = 7 * 24 * 60 * 60 // 7 days
+
+        const finalSeconds = clamp(seconds, MIN_TTL, MAX_TTL)
+        this.#ttl = sec2ms(finalSeconds)
+    }
+
+    /**
      * Initializes the text-generation pipeline. Must be called before `complete()`.
      *
      * @param {string} model_name The Hugging Face model ID to load.
@@ -59,8 +97,37 @@ export class TransformerLLM {
      * @returns {Promise<TransformerLLM>} Returns `this` instance for chaining.
      */
     async init(model_name, options) {
+        this.#modelName = model_name
+        this.#options = options
         this.#pipeline = await createPipeline('text-generation', model_name, options)
         return this
+    }
+
+    /**
+     * Manually unloads the model from memory to free up resources.
+     */
+    async unload() {
+        if (this.#pipeline) {
+            await this.#pipeline.dispose()
+            this.#pipeline = null
+        }
+        this.#clearTimer()
+    }
+
+    #clearTimer() {
+        if (this.#ttlTimer) {
+            clearTimeout(this.#ttlTimer)
+            this.#ttlTimer = null
+        }
+    }
+
+    #startTimer() {
+        this.#clearTimer()
+        if (this.#ttl > 0) {
+            this.#ttlTimer = setTimeout(() => {
+                this.unload().catch((e) => console.error('Error auto-unloading model:', e))
+            }, this.#ttl)
+        }
     }
 
     /**
@@ -79,9 +146,18 @@ export class TransformerLLM {
         if (!isArr(messages) && !isStr(messages)) {
             throw new TypeError(`Expected messages to be an array or string, but got ${messages} (${typeof messages})`)
         }
-        if (!this.#pipeline) {
-            throw new Error('Pipeline not initialized. Call init() first.')
+
+        if (!this.#modelName) {
+            throw new Error('Model configuration missing. Call init() first.')
         }
+
+        this.#clearTimer()
+
+        // On-demand load (Cold Start)
+        if (!this.#pipeline) {
+            await this.init(this.#modelName, this.#options)
+        }
+
         const onTokenIsFn = isFn(onToken)
 
         const buffer = []
@@ -112,6 +188,9 @@ export class TransformerLLM {
         }
 
         const result = await this.#pipeline(messages, pipelineOptions)
+
+        this.#startTimer()
+
         return result
     }
 }
